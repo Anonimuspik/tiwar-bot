@@ -1,6 +1,8 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 
+const ACCOUNT_INDEX = parseInt(process.env.ACCOUNT_INDEX || '1', 10);
+
 const ORDER_DEFAULT = [
   'clanrecruit','clangreet','mine','forge','cave',
   'clandungeon','campaign','career','sage','battles',
@@ -19,66 +21,46 @@ const BATTLES_ALL_ON = {
   autoAltars: true,
 };
 
-const ACCOUNTS = [
-  {
-    id: 1,
+const ACCOUNT_CONFIGS = {
+  1: {
     name: 'Kaneki',
-    cookies: 'COOKIES_JSON_1',
-    order: ORDER_DEFAULT,
-    extra: BATTLES_ALL_ON
-  },
-  {
-    id: 2,
-    name: 'Black Fly',
-    cookies: 'COOKIES_JSON_2',
-    order: ORDER_DEFAULT,
-    extra: BATTLES_ALL_ON
-  }
-];
-
-const scriptContent = fs.readFileSync('userscript.js', 'utf8');
-
-async function runAccount(browser, acc) {
-  const raw = process.env[acc.cookies];
-  if (!raw) {
-    console.log(`[${acc.name}] no cookies`);
-    return null;
-  }
-
-  const cookies = JSON.parse(raw);
-
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 800 }
-  });
-
-  await context.addCookies(cookies);
-
-  const page = await context.newPage();
-
-  page.on('console', m => console.log(`[${acc.name}]`, m.text()));
-
-  await page.goto('https://tiwar.ru/', { waitUntil: 'commit' });
-
-  await page.evaluate((accData) => {
-    const KEY = 'fadd_tiwar_settings';
-
-    const merged = {
-      ...JSON.parse(localStorage.getItem(KEY) || '{}'),
+    cookiesEnv: 'COOKIES_JSON_1',
+    settings: {
       autoSequentialFarm: true,
-      sequentialOrder: accData.order,
-      ...accData.extra
-    };
-
-    localStorage.setItem(KEY, JSON.stringify(merged));
-  }, acc);
-
-  await page.addScriptTag({ content: scriptContent });
-
-  return page;
-}
+      sequentialOrder: ORDER_DEFAULT,
+      ...BATTLES_ALL_ON,
+    }
+  },
+  2: {
+    name: 'Black Fly',
+    cookiesEnv: 'COOKIES_JSON_2',
+    settings: {
+      autoSequentialFarm: true,
+      sequentialOrder: ORDER_DEFAULT,
+      ...BATTLES_ALL_ON,
+    }
+  }
+};
 
 (async () => {
-  console.log('[bot] START (2 ACCOUNTS)');
+  const config = ACCOUNT_CONFIGS[ACCOUNT_INDEX];
+
+  if (!config) {
+    console.error('Unknown account:', ACCOUNT_INDEX);
+    process.exit(1);
+  }
+
+  console.log(`[bot] Start account ${config.name}`);
+
+  const cookiesRaw = process.env[config.cookiesEnv];
+  if (!cookiesRaw) {
+    console.error('No cookies env:', config.cookiesEnv);
+    process.exit(1);
+  }
+
+  const cookies = JSON.parse(cookiesRaw);
+
+  const scriptContent = fs.readFileSync('userscript.js', 'utf8');
 
   const browser = await chromium.launch({
     headless: true,
@@ -89,22 +71,33 @@ async function runAccount(browser, acc) {
     ]
   });
 
-  const pages = await Promise.all(
-    ACCOUNTS.map(acc => runAccount(browser, acc))
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 800 }
+  });
+
+  await context.addCookies(cookies);
+
+  const page = await context.newPage();
+
+  page.on('console', msg =>
+    console.log(`[${config.name}]`, msg.text())
   );
 
-  console.log('[bot] BOTH ACCOUNTS RUNNING');
+  await page.goto('https://tiwar.ru/', {
+    waitUntil: 'domcontentloaded',
+    timeout: 60000
+  });
 
-  const HEARTBEAT = 120000;
+  await page.evaluate((cfg) => {
+    const KEY = 'fadd_tiwar_settings';
+    const merged = {
+      ...JSON.parse(localStorage.getItem(KEY) || '{}'),
+      ...cfg
+    };
+    localStorage.setItem(KEY, JSON.stringify(merged));
+  }, config.settings);
 
-  setInterval(async () => {
-    for (const page of pages) {
-      if (!page) continue;
-      try {
-        await page.evaluate(() => window._fadd_alive === true);
-      } catch {}
-    }
-  }, HEARTBEAT);
+  await page.addScriptTag({ content: scriptContent });
 
   const RUN_TIME = 5 * 60 * 60 * 1000;
   await new Promise(r => setTimeout(r, RUN_TIME));
