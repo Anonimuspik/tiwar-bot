@@ -1628,7 +1628,7 @@
         if (task === 'forge') return runSequentialForge();
         if (task === 'hunt') return runSequentialHunt();
         if (task === 'cave') return runSequentialCave();
-        if (task === 'clandungeon') return runClanDungeon(true);
+        if (task === 'clandungeon') return false; // временно отключено
         if (task === 'campaign') return runCampaign(true);
         if (task === 'career') return runCareer(true);
         if (task === 'sage') return runSageQuests();
