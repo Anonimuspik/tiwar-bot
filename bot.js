@@ -1,9 +1,34 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
 
-// ── Конфиг аккаунтов ────────────────────────────────────────────────────────
+const ACCOUNT_INDEX = parseInt(process.env.ACCOUNT_INDEX || '1', 10);
 
-const ACCOUNT_INDEX = parseInt(process.env.ACCOUNT_INDEX || '1', 10); // 1..5
+// Общий порядок для акков 1-4
+const ORDER_DEFAULT = [
+  'clanrecruit', 'clangreet', 'mine', 'forge', 'cave',
+  'clandungeon', 'campaign', 'career', 'sage', 'battles',
+  'arena', 'treasury', 'undying'
+];
+
+// Акк 5 — то же + clanquest
+const ORDER_ACC5 = [
+  'clanrecruit', 'clangreet', 'mine', 'forge', 'cave',
+  'clandungeon', 'campaign', 'career', 'sage', 'battles',
+  'arena', 'treasury', 'undying', 'clanquest'
+];
+
+// Все авто-сражения включены для всех
+const BATTLES_ALL_ON = {
+  battlesEnableUndying: true,
+  battlesEnableClanfight: true,
+  battlesEnableKing: true,
+  battlesEnableAltars: true,
+  battlesEnableClancoliseum: true,
+  autoUndying: true,
+  autoClanfight: true,
+  autoKing: true,
+  autoAltars: true,
+};
 
 const ACCOUNT_CONFIGS = {
   1: {
@@ -11,17 +36,9 @@ const ACCOUNT_CONFIGS = {
     cookiesEnv: 'COOKIES_JSON_1',
     settings: {
       autoSequentialFarm: true,
-      sequentialOrder: ['arena','mine','forge','hunt','cave','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet'],
+      sequentialOrder: ORDER_DEFAULT,
       sequentialIgnored: [],
-      autoAltars: true,
-      autoKing: true,
-      autoClanfight: true,
-      autoUndying: true,
-      battlesEnableUndying: true,
-      battlesEnableClanfight: false,
-      battlesEnableKing: true,
-      battlesEnableAltars: true,
-      battlesEnableClancoliseum: false,
+      ...BATTLES_ALL_ON,
     }
   },
   2: {
@@ -29,17 +46,9 @@ const ACCOUNT_CONFIGS = {
     cookiesEnv: 'COOKIES_JSON_2',
     settings: {
       autoSequentialFarm: true,
-      sequentialOrder: ['mine','forge','treasury','hunt','sage','arena','coliseum','clandungeon','campaign','career','undying','clanrecruit','clangreet'],
+      sequentialOrder: ORDER_DEFAULT,
       sequentialIgnored: [],
-      battlesEnableUndying: false,
-      battlesEnableClanfight: false,
-      battlesEnableKing: false,
-      battlesEnableAltars: false,
-      battlesEnableClancoliseum: false,
-      autoUndying: false,
-      autoClanfight: false,
-      autoKing: false,
-      autoAltars: false,
+      ...BATTLES_ALL_ON,
     }
   },
   3: {
@@ -47,17 +56,9 @@ const ACCOUNT_CONFIGS = {
     cookiesEnv: 'COOKIES_JSON_3',
     settings: {
       autoSequentialFarm: true,
-      sequentialOrder: ['mine','forge','arena','sage','coliseum','clandungeon','campaign','career','battles','treasury','undying','clanquest','clanrecruit','clangreet'],
+      sequentialOrder: ORDER_DEFAULT,
       sequentialIgnored: [],
-      battlesEnableUndying: true,
-      battlesEnableClanfight: true,
-      battlesEnableKing: true,
-      battlesEnableAltars: true,
-      battlesEnableClancoliseum: true,
-      autoUndying: true,
-      autoClanfight: true,
-      autoKing: true,
-      autoAltars: true,
+      ...BATTLES_ALL_ON,
     }
   },
   4: {
@@ -65,17 +66,9 @@ const ACCOUNT_CONFIGS = {
     cookiesEnv: 'COOKIES_JSON_4',
     settings: {
       autoSequentialFarm: true,
-      sequentialOrder: ['clanrecruit','battles','mine','forge','hunt','arena','cave','clandungeon','campaign','career','sage','treasury','undying','clanquest','clangreet'],
+      sequentialOrder: ORDER_DEFAULT,
       sequentialIgnored: [],
-      battlesEnableUndying: true,
-      battlesEnableClanfight: true,
-      battlesEnableKing: true,
-      battlesEnableAltars: true,
-      battlesEnableClancoliseum: false,
-      autoUndying: true,
-      autoClanfight: true,
-      autoKing: true,
-      autoAltars: true,
+      ...BATTLES_ALL_ON,
     }
   },
   5: {
@@ -83,22 +76,12 @@ const ACCOUNT_CONFIGS = {
     cookiesEnv: 'COOKIES_JSON_5',
     settings: {
       autoSequentialFarm: true,
-      sequentialOrder: ['clanrecruit','battles','mine','forge','hunt','arena','cave','clandungeon','campaign','career','sage','treasury','undying','clanquest','clangreet'],
+      sequentialOrder: ORDER_ACC5,
       sequentialIgnored: [],
-      battlesEnableUndying: true,
-      battlesEnableClanfight: true,
-      battlesEnableKing: true,
-      battlesEnableAltars: true,
-      battlesEnableClancoliseum: false,
-      autoUndying: true,
-      autoClanfight: true,
-      autoKing: true,
-      autoAltars: true,
+      ...BATTLES_ALL_ON,
     }
   }
 };
-
-// ── Основной запуск ──────────────────────────────────────────────────────────
 
 (async () => {
   const config = ACCOUNT_CONFIGS[ACCOUNT_INDEX];
@@ -131,7 +114,6 @@ const ACCOUNT_CONFIGS = {
     viewport: { width: 1280, height: 800 }
   });
 
-  // Устанавливаем cookies
   const formattedCookies = cookies.map(c => ({
     name: c.name,
     value: c.value,
@@ -146,30 +128,23 @@ const ACCOUNT_CONFIGS = {
   await context.addCookies(formattedCookies);
 
   const page = await context.newPage();
-
   page.on('console', msg => console.log(`[page][${config.name}] ${msg.text()}`));
   page.on('pageerror', err => console.error(`[page-err][${config.name}] ${err.message}`));
 
   console.log(`[bot] Открываем tiwar.ru...`);
   await page.goto('https://tiwar.ru/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  console.log(`[bot] URL: ${page.url()}`);
 
-  const url = page.url();
-  console.log(`[bot] URL после загрузки: ${url}`);
-
-  // Устанавливаем настройки в localStorage
   await page.evaluate((cfg) => {
-    const SETTINGS_KEY = 'fadd_tiwar_settings';
-    const existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    const merged = { ...existing, ...cfg };
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
-    console.log('[bot] Настройки установлены:', JSON.stringify(merged));
+    const KEY = 'fadd_tiwar_settings';
+    const merged = { ...JSON.parse(localStorage.getItem(KEY) || '{}'), ...cfg };
+    localStorage.setItem(KEY, JSON.stringify(merged));
+    console.log('[bot] Настройки:', JSON.stringify(merged));
   }, config.settings);
 
-  // Внедряем скрипт
   await page.addScriptTag({ content: scriptContent });
   console.log(`[bot] Скрипт внедрён для ${config.name}`);
 
-  // Держим бота активным ~5ч40м
   const RUN_DURATION = 5 * 60 * 60 * 1000 + 40 * 60 * 1000;
   const HEARTBEAT = 60 * 1000;
   const startTime = Date.now();
@@ -177,15 +152,13 @@ const ACCOUNT_CONFIGS = {
   const heartbeatInterval = setInterval(async () => {
     const elapsed = Math.round((Date.now() - startTime) / 60000);
     console.log(`[bot][${config.name}] Работает ${elapsed} мин...`);
-
     try {
       const isAlive = await page.evaluate(() => !!window._fadd_alive).catch(() => false);
       if (!isAlive) {
-        console.log(`[bot] Скрипт не активен, переинъецируем...`);
+        console.log(`[bot] Переинъецируем скрипт...`);
         await page.evaluate((cfg) => {
-          localStorage.setItem('fadd_tiwar_settings', JSON.stringify(
-            { ...JSON.parse(localStorage.getItem('fadd_tiwar_settings') || '{}'), ...cfg }
-          ));
+          const KEY = 'fadd_tiwar_settings';
+          localStorage.setItem(KEY, JSON.stringify({ ...JSON.parse(localStorage.getItem(KEY) || '{}'), ...cfg }));
         }, config.settings);
         await page.addScriptTag({ content: scriptContent });
       }
@@ -197,6 +170,6 @@ const ACCOUNT_CONFIGS = {
   await new Promise(resolve => setTimeout(resolve, RUN_DURATION));
 
   clearInterval(heartbeatInterval);
-  console.log(`[bot][${config.name}] Завершение работы.`);
+  console.log(`[bot][${config.name}] Завершение.`);
   await browser.close();
 })();
