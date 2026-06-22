@@ -1481,6 +1481,22 @@
     function runSequentialFarm() {
         if (!document.body) return;
 
+        // ПРИОРИТЕТ #0: если прямо сейчас идёт реальный бой (любого типа —
+        // охота, колизей, клан-колизей, долина бессмертных, король, алтари,
+        // клан-война) — НИКОГДА не переключаемся на другую задачу из очереди.
+        // Бросаем всё и продолжаем именно этот бой, пока он не закончится.
+        if (isAnyFightPage()) {
+            const url = window.location.href;
+            if (url.includes('/coliseum/') && !url.includes('/clancoliseum/')) {
+                runColiseum(true);
+            } else if (url.includes('/clancoliseum/')) {
+                runClancoliseum(true);
+            } else {
+                runAutoHuntActions(true);
+            }
+            return;
+        }
+
         const now = Date.now();
         const last = parseInt(localStorage.getItem(SEQUENTIAL_LAST_KEY) || '0', 10);
 
