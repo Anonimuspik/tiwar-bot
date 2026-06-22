@@ -1,4 +1,4 @@
-name: Tiwar Auto-Hunt Bot (FAST)
+name: Tiwar Auto-Hunt Bot (2 ACCOUNTS FAST)
 
 on:
   schedule:
@@ -9,6 +9,11 @@ jobs:
   run-bot:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+
+    strategy:
+      matrix:
+        account: [1, 2]
+      fail-fast: false
 
     steps:
       - name: Checkout repo
@@ -39,9 +44,7 @@ jobs:
 
       - name: Run bot
         env:
+          ACCOUNT_INDEX: ${{ matrix.account }}
           COOKIES_JSON_1: ${{ secrets.COOKIES_JSON_1 }}
           COOKIES_JSON_2: ${{ secrets.COOKIES_JSON_2 }}
-          COOKIES_JSON_3: ${{ secrets.COOKIES_JSON_3 }}
-          COOKIES_JSON_4: ${{ secrets.COOKIES_JSON_4 }}
-          COOKIES_JSON_5: ${{ secrets.COOKIES_JSON_5 }}
         run: node bot.js
