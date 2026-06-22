@@ -2341,6 +2341,26 @@
                 return true;
             }
 
+            // Если это задание "использовать эликсир" (quest_t=quest в URL)
+            if (url.includes('quest_t=quest')) {
+                // Ищем любую кнопку "Использовать" эликсира
+                const elixirBtn = findElixirUseButton() || findBestElixirButton();
+                if (elixirBtn) {
+                    const last = parseInt(localStorage.getItem('fadd_sage_elixir_last') || '0', 10);
+                    if (Date.now() - last > 1000) {
+                        localStorage.setItem('fadd_sage_elixir_last', Date.now().toString());
+                        console.log('[sage/chest] используем эликсир для задания');
+                        forceClick(elixirBtn);
+                    }
+                    return true;
+                }
+                // Эликсира нет — сразу продолжаем цикл, не зависаем
+                console.log('[sage/chest] эликсира нет — пропускаем задание');
+                window.location.href = 'https://tiwar.ru/quest/';
+                return true;
+            }
+
+            // Обычная страница инвентаря без задания
             const elixirBtn = findElixirUseButton();
             if (elixirBtn) {
                 const last = parseInt(localStorage.getItem('fadd_sage_elixir_last') || '0', 10);
