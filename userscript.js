@@ -2921,11 +2921,6 @@
         const url = window.location.href;
 
         if (!url.includes('/clandungeon')) {
-            // Антизависание: если недавно уже заходили но подземелье было недоступно —
-            // не ломимся туда снова, даём 5 мин кулдауна чтобы sequential farm двигался дальше
-            const lastNav = parseInt(localStorage.getItem('fadd_clandungeon_nav_last') || '0', 10);
-            if (Date.now() - lastNav < 5 * 60 * 1000) return false;
-            localStorage.setItem('fadd_clandungeon_nav_last', Date.now().toString());
             window.location.href = 'https://tiwar.ru/clandungeon/';
             return true;
         }
@@ -2950,7 +2945,8 @@
 
         if (bodyText.includes('Удары закончились')) {
             rememberCooldownFromText('clandungeon', 'ударов через');
-            localStorage.removeItem('fadd_clandungeon_nav_last'); // сбрасываем — следующий визит через кулдаун таймера
+            console.log('[clandungeon] удары закончились, уходим на главную');
+            window.location.href = 'https://tiwar.ru/';
             return false;
         }
 
@@ -2962,7 +2958,8 @@
 
             if (hits <= 0) {
                 rememberCooldownFromText('clandungeon', 'ударов через');
-                localStorage.removeItem('fadd_clandungeon_nav_last');
+                console.log('[clandungeon] ударов 0, уходим на главную');
+                window.location.href = 'https://tiwar.ru/';
                 return false;
             }
         }
@@ -2971,8 +2968,8 @@
 
         if (!attackBtn) {
             rememberCooldownFromText('clandungeon', 'ударов через');
-            localStorage.removeItem('fadd_clandungeon_nav_last');
-            console.log('[clandungeon] кнопка атаки не найдена');
+            console.log('[clandungeon] кнопка атаки не найдена, уходим на главную');
+            window.location.href = 'https://tiwar.ru/';
             return false;
         }
 
