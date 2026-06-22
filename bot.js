@@ -12,66 +12,103 @@ function loadCookies() {
     return JSON.parse(raw);
 }
 
-// Этот код выполняется ДО старта userscript.js на каждой странице/перезагрузке
-const INIT_SETTINGS = `
+// ШАГ 1: выполняется ДО userscript — прописываем базовые настройки
+const INIT_BEFORE = `
 (function() {
-    // ── Основные настройки ───────────────────────────────────────────────────
     const KEY = 'fadd_tiwar_settings';
     let s = {};
     try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) {}
 
     s.autoSequentialFarm        = true;
-
-    // Авто-сражения по расписанию (активные бои)
     s.autoUndying               = true;
     s.autoClanfight             = true;
     s.autoKing                  = true;
     s.autoAltars                = true;
-    s.autoClancoliseum          = false;  // колизей — только заявки, не активный бой
-
-    // Авто-заявки сражений — все 5
+    s.autoClancoliseum          = false;
+    s.autoHunt1                 = false;
+    s.autoMine                  = false;
+    s.autoForge                 = false;
+    s.autoCave                  = false;
+    s.autoClanDungeon           = false;
+    s.autoCampaign              = false;
+    s.autoCareer                = false;
+    s.autoAdventure             = false;
     s.battlesEnableUndying      = true;
     s.battlesEnableClanfight    = true;
     s.battlesEnableKing         = true;
     s.battlesEnableAltars       = true;
     s.battlesEnableClancoliseum = true;
 
-    // Одиночные авто-режимы — всё выключено, управляет только очередь
-    s.autoHunt1       = false;
-    s.autoMine        = false;
-    s.autoForge       = false;
-    s.autoCave        = false;
-    s.autoClanDungeon = false;
-    s.autoCampaign    = false;
-    s.autoCareer      = false;
-    s.autoAdventure   = false;
-
     localStorage.setItem(KEY, JSON.stringify(s));
 
-    // ── Порядок очереди автофарма ────────────────────────────────────────────
+    // Порядок очереди — только нужные задачи
     const CUSTOM_ORDER = [
-        'clanrecruit',  // Авто-набор в клан
-        'clangreet',    // Авто-привет
-        'mine',         // Авто-шахта
-        'forge',        // Авто-кузница
-        'cave',         // Авто-пещера
-        'clandungeon',  // Авто-подземелье
-        'campaign',     // Авто-поход
-        'career',       // Карьера
-        'sage',         // Хижина мудреца
-        'battles',      // Авто-заявки сражений
-        'arena',        // Авто-арена
-        'treasury',     // Авто-казна клана
-        'undying',      // Авто-долина бессмертных
+        'clanrecruit','clangreet','mine','forge','cave',
+        'clandungeon','campaign','career','sage',
+        'battles','arena','treasury','undying'
     ];
     localStorage.setItem('fadd_custom_order', JSON.stringify(CUSTOM_ORDER));
 
-    // ── Замороженные задачи ──────────────────────────────────────────────────
-    // hunt, league, coliseum, clanquest — заморожены и не выполняются
-    const FROZEN = ['hunt', 'league', 'coliseum', 'clanquest'];
-    localStorage.setItem('fadd_frozen_tasks', JSON.stringify(FROZEN));
+    // Замороженные — пишем сейчас, но initFadd() может их сбросить
+    // Поэтому повторно зафиксируем ПОСЛЕ через патч ниже
+    localStorage.setItem('fadd_frozen_tasks', JSON.stringify(['hunt','league','coliseum','clanquest']));
 
-    console.log('[bot-init] настройки прописаны до старта скрипта');
+    console.log('[bot-init] pre-script настройки прописаны');
+})();
+`;
+
+// ШАГ 2: выполняется ПОСЛЕ userscript — патчит initFadd чтобы frozen не сбрасывались
+const INIT_AFTER = `
+(function() {
+    // Патчим оригинальный initFadd: после его выполнения
+    // принудительно восстанавливаем замороженные задачи
+    // Используем MutationObserver на <body> — он сработает когда DOM готов
+    const FROZEN_ALWAYS = ['hunt', 'league', 'coliseum', 'clanquest'];
+
+    function enforceFrozen() {
+        try {
+            const current = JSON.parse(localStorage.getItem('fadd_frozen_tasks') || '[]');
+            const set = new Set(current);
+            let changed = false;
+            FROZEN_ALWAYS.forEach(t => {
+                if (!set.has(t)) { set.add(t); changed = true; }
+            });
+            if (changed) {
+                localStorage.setItem('fadd_frozen_tasks', JSON.stringify([...set]));
+                console.log('[bot-patch] восстановили frozen:', [...set]);
+            }
+        } catch(e) {}
+    }
+
+    // Сразу после загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            // initFadd вызывается на DOMContentLoaded — ждём чуть позже
+            setTimeout(enforceFrozen, 100);
+            // И ещё раз через секунду на случай задержки
+            setTimeout(enforceFrozen, 1000);
+        });
+    } else {
+        setTimeout(enforceFrozen, 100);
+        setTimeout(enforceFrozen, 1000);
+    }
+
+    // Дополнительно — перехватываем localStorage.setItem
+    // чтобы frozen_tasks никогда не мог потерять нужные задачи
+    const _origSet = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = function(key, value) {
+        if (key === 'fadd_frozen_tasks') {
+            try {
+                const arr = JSON.parse(value || '[]');
+                const set = new Set(arr);
+                FROZEN_ALWAYS.forEach(t => set.add(t));
+                value = JSON.stringify([...set]);
+            } catch(e) {}
+        }
+        return _origSet(key, value);
+    };
+
+    console.log('[bot-patch] перехват frozen_tasks активен');
 })();
 `;
 
@@ -86,10 +123,10 @@ const INIT_SETTINGS = `
 
     await context.addCookies(loadCookies());
 
-    // Порядок важен: сначала прописываем настройки в localStorage,
-    // потом запускается userscript — он читает уже правильные значения
-    await context.addInitScript({ content: INIT_SETTINGS });
+    // Порядок addInitScript важен — выполняются по порядку регистрации
+    await context.addInitScript({ content: INIT_BEFORE });
     await context.addInitScript({ content: fs.readFileSync(path.join(__dirname, 'userscript.js'), 'utf8') });
+    await context.addInitScript({ content: INIT_AFTER });
 
     const page = await context.newPage();
     page.on('console', msg => console.log('[page]', msg.text()));
@@ -99,7 +136,6 @@ const INIT_SETTINGS = `
     await page.goto(GAME_URL, { waitUntil: 'load', timeout: 60000 });
 
     console.log('[bot] Работаю', RUN_MINUTES, 'минут.');
-
     const endAt = Date.now() + RUN_MINUTES * 60 * 1000;
 
     while (Date.now() < endAt) {
