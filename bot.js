@@ -22,62 +22,19 @@ const BATTLES_ALL_ON = {
 };
 
 const ACCOUNTS = [
-  {
-    id: 1,
-    name: 'Kaneki',
-    cookies: 'COOKIES_JSON_1',
-    order: ORDER_DEFAULT,
-    extra: BATTLES_ALL_ON
-  },
-  {
-    id: 2,
-    name: 'Black Fly',
-    cookies: 'COOKIES_JSON_2',
-    order: ORDER_DEFAULT,
-    extra: BATTLES_ALL_ON
-  },
-  {
-    id: 3,
-    name: 'Tsukiyama',
-    cookies: 'COOKIES_JSON_3',
-    order: ORDER_DEFAULT,
-    extra: BATTLES_ALL_ON
-  },
-  {
-    id: 4,
-    name: 'Украду',
-    cookies: 'COOKIES_JSON_4',
-    order: ORDER_DEFAULT,
-    extra: BATTLES_ALL_ON
-  },
-  {
-    id: 5,
-    name: 'Вирус Б',
-    cookies: 'COOKIES_JSON_5',
-    order: ORDER_ACC5,
-    extra: {
-      ...BATTLES_ALL_ON,
-      autoClanTasks: true
-    }
-  }
+  { id: 1, name: 'Kaneki', cookies: 'COOKIES_JSON_1', order: ORDER_DEFAULT, extra: BATTLES_ALL_ON },
+  { id: 2, name: 'Black Fly', cookies: 'COOKIES_JSON_2', order: ORDER_DEFAULT, extra: BATTLES_ALL_ON },
+  { id: 3, name: 'Tsukiyama', cookies: 'COOKIES_JSON_3', order: ORDER_DEFAULT, extra: BATTLES_ALL_ON },
+  { id: 5, name: 'Вирус Б', cookies: 'COOKIES_JSON_5', order: ORDER_ACC5, extra: { ...BATTLES_ALL_ON, autoClanTasks: true } }
 ];
 
 const scriptContent = fs.readFileSync('userscript.js', 'utf8');
 
 async function runAccount(browser, acc) {
   const raw = process.env[acc.cookies];
-  if (!raw) {
-    console.log(`[${acc.name}] нет cookies`);
-    return null;
-  }
+  if (!raw) return;
 
-  let cookies;
-  try {
-    cookies = JSON.parse(raw);
-  } catch {
-    console.log(`[${acc.name}] bad cookies`);
-    return null;
-  }
+  const cookies = JSON.parse(raw);
 
   const context = await browser.newContext({
     viewport: { width: 1280, height: 800 }
@@ -87,21 +44,17 @@ async function runAccount(browser, acc) {
 
   const page = await context.newPage();
 
-  page.on('console', m => console.log(`[${acc.name}]`, m.text()));
-
   await page.goto('https://tiwar.ru/', { waitUntil: 'commit' });
 
   await page.evaluate((accData) => {
     const KEY = 'fadd_tiwar_settings';
 
-    const merged = {
+    localStorage.setItem(KEY, JSON.stringify({
       ...JSON.parse(localStorage.getItem(KEY) || '{}'),
       autoSequentialFarm: true,
       sequentialOrder: accData.order,
       ...accData.extra
-    };
-
-    localStorage.setItem(KEY, JSON.stringify(merged));
+    }));
   }, acc);
 
   await page.addScriptTag({ content: scriptContent });
@@ -109,9 +62,11 @@ async function runAccount(browser, acc) {
   return page;
 }
 
-(async () => {
-  console.log('[bot] FAST START');
+async function runBatch(browser, batch) {
+  return Promise.all(batch.map(acc => runAccount(browser, acc)));
+}
 
+(async () => {
   const browser = await chromium.launch({
     headless: true,
     args: [
@@ -121,11 +76,21 @@ async function runAccount(browser, acc) {
     ]
   });
 
-  const pages = await Promise.all(
-    ACCOUNTS.map(acc => runAccount(browser, acc))
-  );
+  const CHUNK = 2;
 
-  console.log('[bot] ALL ACCOUNTS READY');
+  const pages = [];
+
+  for (let i = 0; i < ACCOUNTS.length; i += CHUNK) {
+    const batch = ACCOUNTS.slice(i, i + CHUNK);
+
+    const result = await runBatch(browser, batch);
+    pages.push(...result);
+
+    // пауза чтобы не забить CPU
+    await new Promise(r => setTimeout(r, 5000));
+  }
+
+  console.log('[bot] ALL ACCOUNTS RUNNING');
 
   const HEARTBEAT = 120000;
 
@@ -138,9 +103,7 @@ async function runAccount(browser, acc) {
     }
   }, HEARTBEAT);
 
-  const RUN_TIME = 5 * 60 * 60 * 1000;
-
-  await new Promise(r => setTimeout(r, RUN_TIME));
+  await new Promise(r => setTimeout(r, 5 * 60 * 60 * 1000));
 
   await browser.close();
 })();
