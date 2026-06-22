@@ -2921,26 +2921,36 @@
         const url = window.location.href;
         const now = Date.now();
 
-        // Не на странице подземелья — идём туда, но только если не было недавнего кулдауна
+        console.log('[clandungeon] вызов, url:', url);
+
+        // Не на странице подземелья
         if (!url.includes('/clandungeon')) {
             const cd = parseInt(localStorage.getItem('fadd_clandungeon_cd') || '0', 10);
+            const cdLeft = Math.round((cd + 10*60*1000 - now) / 1000);
             if (now - cd < 10 * 60 * 1000) {
-                // ещё на кулдауне — пропускаем задачу
+                console.log('[clandungeon] кулдаун, осталось:', cdLeft, 'сек');
                 return false;
             }
+            console.log('[clandungeon] идём на страницу подземелья');
             window.location.href = 'https://tiwar.ru/clandungeon/';
             return true;
         }
 
-        // Мы на странице подземелья. Любой выход кроме "атакую" — уходим на главную и ставим кулдаун.
+        // Дамп страницы для диагностики
+        const bodyText = document.body ? (document.body.textContent || '') : '';
+        console.log('[clandungeon] ДАМП bodyText (первые 300 символов):', bodyText.replace(/\s+/g,' ').trim().slice(0, 300));
+
+        const allBtns = Array.from(document.querySelectorAll('a')).map(a => (a.textContent||'').trim().slice(0,30) + ' | ' + (a.getAttribute('href')||''));
+        console.log('[clandungeon] все ссылки на странице:', JSON.stringify(allBtns.slice(0,20)));
+
         function exitDungeon(reason) {
-            console.log('[clandungeon]', reason, '— уходим на главную, кулдаун 10 мин');
+            console.log('[clandungeon] ВЫХОД:', reason, '→ идём на главную, кулдаун 10 мин');
             localStorage.setItem('fadd_clandungeon_cd', Date.now().toString());
             window.location.href = 'https://tiwar.ru/';
             return false;
         }
 
-        // Если открыт экран награды — закрываем
+        // Кнопка "В подземелье" (экран награды)
         const closeDungeonBtn = Array.from(document.querySelectorAll('a.btn')).find(a => {
             const href = (a.getAttribute('href') || '').trim();
             const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
@@ -2950,16 +2960,14 @@
             const lastClose = parseInt(localStorage.getItem('fadd_clandungeon_last') || '0', 10);
             if (now - lastClose < 1000) return true;
             localStorage.setItem('fadd_clandungeon_last', now.toString());
-            console.log('[clandungeon] закрываем награду');
+            console.log('[clandungeon] закрываем экран награды');
             forceClick(closeDungeonBtn);
             return true;
         }
 
-        const bodyText = document.body.textContent || '';
-
         if (bodyText.includes('Удары закончились')) {
             rememberCooldownFromText('clandungeon', 'ударов через');
-            return exitDungeon('удары закончились');
+            return exitDungeon('Удары закончились');
         }
 
         const match = bodyText.match(/Осталось ударов:\s*(\d+)/i);
@@ -2970,9 +2978,13 @@
                 rememberCooldownFromText('clandungeon', 'ударов через');
                 return exitDungeon('ударов 0');
             }
+        } else {
+            console.log('[clandungeon] текст "Осталось ударов" НЕ найден на странице');
         }
 
         const attackBtn = findGameButton(['Атаковать монстра'], '/clandungeon/attack');
+        console.log('[clandungeon] кнопка атаки:', attackBtn ? 'НАЙДЕНА' : 'НЕ НАЙДЕНА');
+
         if (!attackBtn) {
             rememberCooldownFromText('clandungeon', 'ударов через');
             return exitDungeon('кнопка атаки не найдена');
@@ -2982,7 +2994,7 @@
         if (now - last < 1000) return true;
 
         localStorage.setItem('fadd_clandungeon_last', now.toString());
-        console.log('[clandungeon] атака');
+        console.log('[clandungeon] АТАКА!');
         forceClick(attackBtn);
         return true;
     }
