@@ -1603,7 +1603,7 @@
         for (let offset = 0; offset < order.length; offset++) {
             const task = order[(startIndex + offset) % order.length];
 
-            const noCooldownTasks = ['campaign', 'career', 'clandungeon', 'battles', 'league', 'coliseum', 'treasury', 'clanrecruit', 'clangreet'];
+            const noCooldownTasks = ['campaign', 'career', 'battles', 'league', 'coliseum', 'treasury', 'clanrecruit', 'clangreet'];
             if (!noCooldownTasks.includes(task) && isTaskOnCooldown(task)) {
                 console.log('[sequential-farm] пропуск по таймеру:', SEQUENTIAL_TASK_LABELS[task]);
                 continue;
@@ -1628,7 +1628,7 @@
         if (task === 'forge') return runSequentialForge();
         if (task === 'hunt') return runSequentialHunt();
         if (task === 'cave') return runSequentialCave();
-        if (task === 'clandungeon') return false; // временно отключено
+        if (task === 'clandungeon') return runClanDungeon(true);
         if (task === 'campaign') return runCampaign(true);
         if (task === 'career') return runCareer(true);
         if (task === 'sage') return runSageQuests();
@@ -2919,58 +2919,59 @@
         if (!force && !settings.autoClanDungeon) return false;
 
         const url = window.location.href;
+        const now = Date.now();
 
         if (!url.includes('/clandungeon')) {
+            console.log('[clandungeon] идём на страницу подземелья');
             window.location.href = 'https://tiwar.ru/clandungeon/';
             return true;
         }
 
-        // Если открыт экран награды — закрываем его кнопкой "В подземелье", чтобы продолжить
+        // Экран награды — закрываем
         const closeDungeonBtn = Array.from(document.querySelectorAll('a.btn')).find(a => {
             const href = (a.getAttribute('href') || '').trim();
             const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
             return href === '?close' && text.includes('В подземелье');
         });
-
         if (closeDungeonBtn) {
             const lastClose = parseInt(localStorage.getItem('fadd_clandungeon_last') || '0', 10);
-            if (Date.now() - lastClose < 1000) return true;
-            localStorage.setItem('fadd_clandungeon_last', Date.now().toString());
-            console.log('[clandungeon] закрываем награду, возвращаемся в подземелье');
+            if (now - lastClose < 1000) return true;
+            localStorage.setItem('fadd_clandungeon_last', now.toString());
+            console.log('[clandungeon] закрываем экран награды');
             forceClick(closeDungeonBtn);
             return true;
         }
 
-        const bodyText = document.body.textContent || '';
+        const bodyText = document.body ? (document.body.textContent || '') : '';
 
         if (bodyText.includes('Удары закончились')) {
+            console.log('[clandungeon] удары закончились, ставим кулдаун');
             rememberCooldownFromText('clandungeon', 'ударов через');
+            window.location.href = 'https://tiwar.ru/';
             return false;
         }
 
         const match = bodyText.match(/Осталось ударов:\s*(\d+)/i);
-
         if (match) {
             const hits = parseInt(match[1], 10);
             console.log('[clandungeon] ударов осталось:', hits);
-
             if (hits <= 0) {
                 rememberCooldownFromText('clandungeon', 'ударов через');
+                window.location.href = 'https://tiwar.ru/';
                 return false;
             }
         }
 
         const attackBtn = findGameButton(['Атаковать монстра'], '/clandungeon/attack');
-
         if (!attackBtn) {
-            rememberCooldownFromText('clandungeon', 'ударов через');
-            console.log('[clandungeon] кнопка атаки не найдена');
+            // Нет кнопки и нет текста про удары — ставим кулдаун 30 минут и уходим
+            console.log('[clandungeon] кнопка атаки не найдена, кулдаун 30 мин');
+            setTaskCooldown('clandungeon', 30 * 60 * 1000);
+            window.location.href = 'https://tiwar.ru/';
             return false;
         }
 
-        const now = Date.now();
         const last = parseInt(localStorage.getItem('fadd_clandungeon_last') || '0', 10);
-
         if (now - last < 1000) return true;
 
         localStorage.setItem('fadd_clandungeon_last', now.toString());
