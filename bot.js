@@ -1,85 +1,82 @@
-// bot.js
-// Открывает headless Chromium, логинится через cookies, внедряет userscript.js
-// и держит страницу открытой заданное время.
-
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const GAME_URL            = process.env.GAME_URL            || 'https://tiwar.ru/';
-const RUN_MINUTES         = parseInt(process.env.RUN_MINUTES         || '340', 10);
+const GAME_URL             = process.env.GAME_URL             || 'https://tiwar.ru/';
+const RUN_MINUTES          = parseInt(process.env.RUN_MINUTES          || '340', 10);
 const RELOAD_EVERY_MINUTES = parseInt(process.env.RELOAD_EVERY_MINUTES || '30',  10);
 
 function loadCookies() {
     const raw = process.env.COOKIES_JSON;
-    if (!raw) throw new Error('Переменная COOKIES_JSON не задана!');
+    if (!raw) throw new Error('COOKIES_JSON не задана!');
     return JSON.parse(raw);
 }
 
-function loadUserscript() {
-    return fs.readFileSync(path.join(__dirname, 'userscript.js'), 'utf8');
-}
+// Этот код выполняется ДО старта userscript.js на каждой странице/перезагрузке
+const INIT_SETTINGS = `
+(function() {
+    // ── Основные настройки ───────────────────────────────────────────────────
+    const KEY = 'fadd_tiwar_settings';
+    let s = {};
+    try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) {}
 
-async function applySettings(page) {
-    await page.evaluate(() => {
+    s.autoSequentialFarm        = true;
 
-        // ── 1. Основные настройки ────────────────────────────────────────────
-        const KEY = 'fadd_tiwar_settings';
-        let s = {};
-        try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+    // Авто-сражения по расписанию (активные бои)
+    s.autoUndying               = true;
+    s.autoClanfight             = true;
+    s.autoKing                  = true;
+    s.autoAltars                = true;
+    s.autoClancoliseum          = false;  // колизей — только заявки, не активный бой
 
-        // Поочерёдный автофарм — включён
-        s.autoSequentialFarm = true;
+    // Авто-заявки сражений — все 5
+    s.battlesEnableUndying      = true;
+    s.battlesEnableClanfight    = true;
+    s.battlesEnableKing         = true;
+    s.battlesEnableAltars       = true;
+    s.battlesEnableClancoliseum = true;
 
-        // Авто-сражения (активные бои по расписанию) — все 4 включены
-        s.autoUndying   = true;   // Долина бессмертных
-        s.autoClanfight = true;   // Клановый турнир
-        s.autoKing      = true;   // Король бессмертных
-        s.autoAltars    = true;   // Древние алтари
+    // Одиночные авто-режимы — всё выключено, управляет только очередь
+    s.autoHunt1       = false;
+    s.autoMine        = false;
+    s.autoForge       = false;
+    s.autoCave        = false;
+    s.autoClanDungeon = false;
+    s.autoCampaign    = false;
+    s.autoCareer      = false;
+    s.autoAdventure   = false;
 
-        // Авто-заявки сражений — все 5 включены
-        s.battlesEnableUndying      = true;  // Долина бессмертных
-        s.battlesEnableClanfight    = true;  // Клановый турнир
-        s.battlesEnableKing         = true;  // Король бессмертных
-        s.battlesEnableAltars       = true;  // Древние алтари
-        s.battlesEnableClancoliseum = true;  // Клановый колизей
+    localStorage.setItem(KEY, JSON.stringify(s));
 
-        localStorage.setItem(KEY, JSON.stringify(s));
+    // ── Порядок очереди автофарма ────────────────────────────────────────────
+    const CUSTOM_ORDER = [
+        'clanrecruit',  // Авто-набор в клан
+        'clangreet',    // Авто-привет
+        'mine',         // Авто-шахта
+        'forge',        // Авто-кузница
+        'cave',         // Авто-пещера
+        'clandungeon',  // Авто-подземелье
+        'campaign',     // Авто-поход
+        'career',       // Карьера
+        'sage',         // Хижина мудреца
+        'battles',      // Авто-заявки сражений
+        'arena',        // Авто-арена
+        'treasury',     // Авто-казна клана
+        'undying',      // Авто-долина бессмертных
+    ];
+    localStorage.setItem('fadd_custom_order', JSON.stringify(CUSTOM_ORDER));
 
-        // ── 2. Порядок очереди автофарма ────────────────────────────────────
-        //    Набор в клан → Привет → Шахта → Кузница → Пещера → Подземелье →
-        //    Поход → Карьера → Хижина мудреца → Заявки сражений → Арена →
-        //    Казна клана → Долина бессмертных
-        const CUSTOM_ORDER = [
-            'clanrecruit',  // Авто-набор в клан
-            'clangreet',    // Авто-привет
-            'mine',         // Авто-шахта
-            'forge',        // Авто-кузница
-            'cave',         // Авто-пещера
-            'clandungeon',  // Авто-подземелье
-            'campaign',     // Авто-поход
-            'career',       // Карьера
-            'sage',         // Хижина мудреца
-            'battles',      // Авто-заявки сражений
-            'arena',        // Авто-арена
-            'treasury',     // Авто-казна клана
-            'undying',      // Авто-долина бессмертных
-        ];
-        localStorage.setItem('fadd_custom_order', JSON.stringify(CUSTOM_ORDER));
+    // ── Замороженные задачи ──────────────────────────────────────────────────
+    // hunt, league, coliseum, clanquest — заморожены и не выполняются
+    const FROZEN = ['hunt', 'league', 'coliseum', 'clanquest'];
+    localStorage.setItem('fadd_frozen_tasks', JSON.stringify(FROZEN));
 
-        // ── 3. Замороженные задачи ───────────────────────────────────────────
-        //    Активны: всё что в CUSTOM_ORDER выше
-        //    Заморожены: hunt (Охота), league (Лига), coliseum (Колизей),
-        //                clanquest (Клан-задания)
-        const FROZEN = ['hunt', 'league', 'coliseum', 'clanquest'];
-        localStorage.setItem('fadd_frozen_tasks', JSON.stringify(FROZEN));
-
-        console.log('[bot] настройки применены');
-    });
-}
+    console.log('[bot-init] настройки прописаны до старта скрипта');
+})();
+`;
 
 (async () => {
-    console.log('[bot] Запуск, время:', new Date().toISOString());
+    console.log('[bot] Запуск:', new Date().toISOString());
 
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({
@@ -87,11 +84,12 @@ async function applySettings(page) {
         viewport: { width: 1280, height: 900 }
     });
 
-    // Куки — авторизация
     await context.addCookies(loadCookies());
 
-    // Скрипт внедряется на каждой странице/перезагрузке (аналог Tampermonkey)
-    await context.addInitScript({ content: loadUserscript() });
+    // Порядок важен: сначала прописываем настройки в localStorage,
+    // потом запускается userscript — он читает уже правильные значения
+    await context.addInitScript({ content: INIT_SETTINGS });
+    await context.addInitScript({ content: fs.readFileSync(path.join(__dirname, 'userscript.js'), 'utf8') });
 
     const page = await context.newPage();
     page.on('console', msg => console.log('[page]', msg.text()));
@@ -100,11 +98,7 @@ async function applySettings(page) {
     console.log('[bot] Открываю', GAME_URL);
     await page.goto(GAME_URL, { waitUntil: 'load', timeout: 60000 });
 
-    // Применяем настройки и перезагружаем чтобы скрипт подхватил их
-    await applySettings(page);
-    await page.reload({ waitUntil: 'load', timeout: 60000 });
-
-    console.log('[bot] Страница загружена, скрипт внедрён. Работаю', RUN_MINUTES, 'минут.');
+    console.log('[bot] Работаю', RUN_MINUTES, 'минут.');
 
     const endAt = Date.now() + RUN_MINUTES * 60 * 1000;
 
@@ -112,19 +106,15 @@ async function applySettings(page) {
         const msLeft = endAt - Date.now();
         const waitMs = Math.min(RELOAD_EVERY_MINUTES * 60 * 1000, msLeft);
         await page.waitForTimeout(waitMs);
-
         if (Date.now() >= endAt) break;
 
         try {
-            console.log('[bot]', new Date().toISOString(), '— профилактическая перезагрузка');
+            console.log('[bot]', new Date().toISOString(), '— перезагрузка');
             await page.reload({ waitUntil: 'load', timeout: 60000 });
-            await applySettings(page);
         } catch (e) {
-            console.log('[bot] Ошибка перезагрузки:', e.message, '— пробую заново');
+            console.log('[bot] Ошибка перезагрузки:', e.message);
             try {
                 await page.goto(GAME_URL, { waitUntil: 'load', timeout: 60000 });
-                await applySettings(page);
-                await page.reload({ waitUntil: 'load', timeout: 60000 });
             } catch (e2) {
                 console.log('[bot] Не получилось:', e2.message);
             }
