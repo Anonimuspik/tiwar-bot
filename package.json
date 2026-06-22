@@ -1,0 +1,12 @@
+{
+  "name": "tiwar-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Headless Playwright runner, который держит вкладку tiwar.ru открытой и внедряет userscript авто-охоты",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "playwright": "^1.47.0"
+  }
+}
