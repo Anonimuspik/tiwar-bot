@@ -1,28 +1,18 @@
 // bot.js
 // Открывает headless Chromium, логинится через cookies, внедряет userscript.js
-// (ваш скрипт авто-охоты) и держит страницу открытой заданное время.
+// и держит страницу открытой заданное время.
 
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const GAME_URL = process.env.GAME_URL || 'https://tiwar.ru/distshores/hunt';
-// Сколько минут держать браузер открытым за один запуск.
-// GitHub Actions free runner убивает job жёстко на 360 минутах (6 часов) —
-// берём с запасом меньше, чтобы процесс завершился сам и чисто.
-const RUN_MINUTES = parseInt(process.env.RUN_MINUTES || '340', 10);
-// Раз в сколько минут просто проверяем/перезагружаем страницу как safety-net
-// (на случай зависания сети, разрыва соединения и т.п.)
-const RELOAD_EVERY_MINUTES = parseInt(process.env.RELOAD_EVERY_MINUTES || '30', 10);
+const GAME_URL            = process.env.GAME_URL            || 'https://tiwar.ru/';
+const RUN_MINUTES         = parseInt(process.env.RUN_MINUTES         || '340', 10);
+const RELOAD_EVERY_MINUTES = parseInt(process.env.RELOAD_EVERY_MINUTES || '30',  10);
 
 function loadCookies() {
     const raw = process.env.COOKIES_JSON;
-    if (!raw) {
-        throw new Error(
-            'Переменная COOKIES_JSON не задана. Добавьте секрет в репозитории ' +
-            '(Settings -> Secrets and variables -> Actions -> New repository secret).'
-        );
-    }
+    if (!raw) throw new Error('Переменная COOKIES_JSON не задана!');
     return JSON.parse(raw);
 }
 
@@ -30,39 +20,61 @@ function loadUserscript() {
     return fs.readFileSync(path.join(__dirname, 'userscript.js'), 'utf8');
 }
 
-async function enableSequentialFarm(page) {
-    // Включаем нужные настройки скрипта в localStorage страницы,
-    // т.к. localStorage не переносится через cookies — это отдельное хранилище.
+async function applySettings(page) {
     await page.evaluate(() => {
+
+        // ── 1. Основные настройки ────────────────────────────────────────────
         const KEY = 'fadd_tiwar_settings';
         let s = {};
         try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+
+        // Поочерёдный автофарм — включён
         s.autoSequentialFarm = true;
+
+        // Авто-сражения (активные бои по расписанию) — все 4 включены
+        s.autoUndying   = true;   // Долина бессмертных
+        s.autoClanfight = true;   // Клановый турнир
+        s.autoKing      = true;   // Король бессмертных
+        s.autoAltars    = true;   // Древние алтари
+
+        // Авто-заявки сражений — все 5 включены
+        s.battlesEnableUndying      = true;  // Долина бессмертных
+        s.battlesEnableClanfight    = true;  // Клановый турнир
+        s.battlesEnableKing         = true;  // Король бессмертных
+        s.battlesEnableAltars       = true;  // Древние алтари
+        s.battlesEnableClancoliseum = true;  // Клановый колизей
+
         localStorage.setItem(KEY, JSON.stringify(s));
 
-        // Порядок задач в очереди — именно такой, как задано
+        // ── 2. Порядок очереди автофарма ────────────────────────────────────
+        //    Набор в клан → Привет → Шахта → Кузница → Пещера → Подземелье →
+        //    Поход → Карьера → Хижина мудреца → Заявки сражений → Арена →
+        //    Казна клана → Долина бессмертных
         const CUSTOM_ORDER = [
-            'clanrecruit', // Авто-набор в клан
-            'clangreet',   // Авто-привет
-            'mine',        // Авто-шахта
-            'forge',       // Авто-кузница
-            'cave',        // Авто-пещера
-            'clandungeon', // Авто-подземелье
-            'campaign',    // Авто-поход
-            'career',      // Карьера
-            'sage',        // Хижина мудреца
-            'battles',     // Авто-заявки сражений
-            'arena',       // Авто-арена
-            'treasury',    // Авто-казна клана
-            'undying'      // Авто-долина бессмертных
+            'clanrecruit',  // Авто-набор в клан
+            'clangreet',    // Авто-привет
+            'mine',         // Авто-шахта
+            'forge',        // Авто-кузница
+            'cave',         // Авто-пещера
+            'clandungeon',  // Авто-подземелье
+            'campaign',     // Авто-поход
+            'career',       // Карьера
+            'sage',         // Хижина мудреца
+            'battles',      // Авто-заявки сражений
+            'arena',        // Авто-арена
+            'treasury',     // Авто-казна клана
+            'undying',      // Авто-долина бессмертных
         ];
         localStorage.setItem('fadd_custom_order', JSON.stringify(CUSTOM_ORDER));
 
-        // Всё, что НЕ входит в список выше (охота, лига, колизей, клан-задания)
-        // — замораживаем, чтобы они не выполнялись и не мешали очереди.
-        const ALL_TASKS = ['arena','mine','forge','hunt','cave','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet'];
-        const frozen = ALL_TASKS.filter(t => !CUSTOM_ORDER.includes(t));
-        localStorage.setItem('fadd_frozen_tasks', JSON.stringify(frozen));
+        // ── 3. Замороженные задачи ───────────────────────────────────────────
+        //    Активны: всё что в CUSTOM_ORDER выше
+        //    Заморожены: hunt (Охота), league (Лига), coliseum (Колизей),
+        //                clanquest (Клан-задания)
+        const FROZEN = ['hunt', 'league', 'coliseum', 'clanquest'];
+        localStorage.setItem('fadd_frozen_tasks', JSON.stringify(FROZEN));
+
+        console.log('[bot] настройки применены');
     });
 }
 
@@ -71,91 +83,55 @@ async function enableSequentialFarm(page) {
 
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         viewport: { width: 1280, height: 900 }
     });
 
+    // Куки — авторизация
     await context.addCookies(loadCookies());
 
-    const userscript = loadUserscript();
-    // addInitScript выполняется на каждой новой странице/перезагрузке
-    // до того, как игра успеет загрузиться — это аналог Tampermonkey.
-    await context.addInitScript({ content: userscript });
+    // Скрипт внедряется на каждой странице/перезагрузке (аналог Tampermonkey)
+    await context.addInitScript({ content: loadUserscript() });
 
     const page = await context.newPage();
-
-    let lastActivityAt = Date.now();
-    page.on('console', msg => {
-        lastActivityAt = Date.now();
-        console.log('[page]', msg.text());
-    });
-    // Игра иногда показывает confirm()/alert() — без обработчика такой диалог
-    // блокирует JS на странице навечно. Автоматически подтверждаем любой диалог.
-    page.on('dialog', async dialog => {
-        console.log('[bot] Игровой диалог:', dialog.type(), '—', dialog.message());
-        try {
-            await dialog.accept();
-        } catch (e) {
-            console.log('[bot] Не удалось закрыть диалог:', e.message);
-        }
-    });
-    // Необработанные JS-ошибки на странице (не через console.log) —
-    // без этого они проходят незаметно, и цикл выглядит "молча зависшим"
-    page.on('pageerror', err => {
-        lastActivityAt = Date.now();
-        console.log('[bot] PAGE ERROR:', err.message);
-    });
+    page.on('console', msg => console.log('[page]', msg.text()));
+    page.on('pageerror', err => console.error('[page-err]', err.message));
 
     console.log('[bot] Открываю', GAME_URL);
-    await page.goto(GAME_URL, { waitUntil: 'load' });
+    await page.goto(GAME_URL, { waitUntil: 'load', timeout: 60000 });
 
-    await enableSequentialFarm(page);
-    await page.reload({ waitUntil: 'load' });
+    // Применяем настройки и перезагружаем чтобы скрипт подхватил их
+    await applySettings(page);
+    await page.reload({ waitUntil: 'load', timeout: 60000 });
 
     console.log('[bot] Страница загружена, скрипт внедрён. Работаю', RUN_MINUTES, 'минут.');
-    lastActivityAt = Date.now();
 
     const endAt = Date.now() + RUN_MINUTES * 60 * 1000;
-    const HANG_TIMEOUT_MS = 2 * 60 * 1000; // 2 минуты без единого console.log — считаем зависанием
-    const CHECK_EVERY_MS = 15 * 1000;
-    let lastPlannedReload = Date.now();
 
     while (Date.now() < endAt) {
-        await page.waitForTimeout(CHECK_EVERY_MS);
+        const msLeft = endAt - Date.now();
+        const waitMs = Math.min(RELOAD_EVERY_MINUTES * 60 * 1000, msLeft);
+        await page.waitForTimeout(waitMs);
+
         if (Date.now() >= endAt) break;
 
-        const idleMs = Date.now() - lastActivityAt;
-        const sincePlannedReload = Date.now() - lastPlannedReload;
-
-        const needHangReload = idleMs >= HANG_TIMEOUT_MS;
-        const needPlannedReload = sincePlannedReload >= RELOAD_EVERY_MINUTES * 60 * 1000;
-
-        if (!needHangReload && !needPlannedReload) continue;
-
         try {
-            if (needHangReload) {
-                console.log('[bot]', new Date().toISOString(), '— страница не подавала признаков жизни', Math.round(idleMs / 1000), 'сек, перезагружаю');
-            } else {
-                console.log('[bot]', new Date().toISOString(), '— профилактическая перезагрузка страницы');
-            }
-            await page.reload({ waitUntil: 'load' });
-            await enableSequentialFarm(page);
-            lastActivityAt = Date.now();
-            lastPlannedReload = Date.now();
+            console.log('[bot]', new Date().toISOString(), '— профилактическая перезагрузка');
+            await page.reload({ waitUntil: 'load', timeout: 60000 });
+            await applySettings(page);
         } catch (e) {
-            console.log('[bot] Ошибка при перезагрузке:', e.message, '— пробую открыть страницу заново');
+            console.log('[bot] Ошибка перезагрузки:', e.message, '— пробую заново');
             try {
-                await page.goto(GAME_URL, { waitUntil: 'load' });
-                await enableSequentialFarm(page);
-                await page.reload({ waitUntil: 'load' });
-                lastActivityAt = Date.now();
-                lastPlannedReload = Date.now();
+                await page.goto(GAME_URL, { waitUntil: 'load', timeout: 60000 });
+                await applySettings(page);
+                await page.reload({ waitUntil: 'load', timeout: 60000 });
             } catch (e2) {
-                console.log('[bot] Не получилось переоткрыть страницу:', e2.message);
+                console.log('[bot] Не получилось:', e2.message);
             }
         }
     }
 
-    console.log('[bot] Время вышло, закрываю браузер. Следующий запуск подхватит GitHub Actions по расписанию.');
+    console.log('[bot] Время вышло, закрываю браузер.');
     await browser.close();
 })().catch(err => {
     console.error('[bot] Критическая ошибка:', err);
