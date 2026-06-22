@@ -39,6 +39,30 @@ async function enableSequentialFarm(page) {
         try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
         s.autoSequentialFarm = true;
         localStorage.setItem(KEY, JSON.stringify(s));
+
+        // Порядок задач в очереди — именно такой, как задано
+        const CUSTOM_ORDER = [
+            'clanrecruit', // Авто-набор в клан
+            'clangreet',   // Авто-привет
+            'mine',        // Авто-шахта
+            'forge',       // Авто-кузница
+            'cave',        // Авто-пещера
+            'clandungeon', // Авто-подземелье
+            'campaign',    // Авто-поход
+            'career',      // Карьера
+            'sage',        // Хижина мудреца
+            'battles',     // Авто-заявки сражений
+            'arena',       // Авто-арена
+            'treasury',    // Авто-казна клана
+            'undying'      // Авто-долина бессмертных
+        ];
+        localStorage.setItem('fadd_custom_order', JSON.stringify(CUSTOM_ORDER));
+
+        // Всё, что НЕ входит в список выше (охота, лига, колизей, клан-задания)
+        // — замораживаем, чтобы они не выполнялись и не мешали очереди.
+        const ALL_TASKS = ['arena','mine','forge','hunt','cave','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet'];
+        const frozen = ALL_TASKS.filter(t => !CUSTOM_ORDER.includes(t));
+        localStorage.setItem('fadd_frozen_tasks', JSON.stringify(frozen));
     });
 }
 
