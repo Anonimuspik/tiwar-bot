@@ -2598,6 +2598,14 @@
     }
 
     function runAutoHunt() {
+        try {
+            runAutoHuntInner();
+        } catch (e) {
+            console.log('[fadd] ОШИБКА в основном цикле:', e && e.message ? e.message : e, e && e.stack ? e.stack : '');
+        }
+    }
+
+    function runAutoHuntInner() {
         settings.autoClanDungeon = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}').autoClanDungeon ?? false;
 
         // Если идёт сканирование таймеров — обрабатываем его в приоритете
