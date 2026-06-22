@@ -2920,37 +2920,39 @@
 
         const url = window.location.href;
         const now = Date.now();
+        const CD_KEY = 'fadd_clandungeon_cd';
 
         console.log('[clandungeon] вызов, url:', url);
 
-        // Не на странице подземелья
         if (!url.includes('/clandungeon')) {
-            const cd = parseInt(localStorage.getItem('fadd_clandungeon_cd') || '0', 10);
-            const cdLeft = Math.round((cd + 10*60*1000 - now) / 1000);
+            // Проверяем кулдаун — если недавно заходили и там ничего не было
+            const cd = parseInt(localStorage.getItem(CD_KEY) || '0', 10);
             if (now - cd < 10 * 60 * 1000) {
-                console.log('[clandungeon] кулдаун, осталось:', cdLeft, 'сек');
+                console.log('[clandungeon] кулдаун активен, пропускаем');
                 return false;
             }
+            // Ставим кулдаун ДО перехода — чтобы пока страница грузится,
+            // следующие тики не ломились туда снова
+            localStorage.setItem(CD_KEY, now.toString());
             console.log('[clandungeon] идём на страницу подземелья');
             window.location.href = 'https://tiwar.ru/clandungeon/';
             return true;
         }
 
-        // Дамп страницы для диагностики
-        const bodyText = document.body ? (document.body.textContent || '') : '';
-        console.log('[clandungeon] ДАМП bodyText (первые 300 символов):', bodyText.replace(/\s+/g,' ').trim().slice(0, 300));
-
-        const allBtns = Array.from(document.querySelectorAll('a')).map(a => (a.textContent||'').trim().slice(0,30) + ' | ' + (a.getAttribute('href')||''));
-        console.log('[clandungeon] все ссылки на странице:', JSON.stringify(allBtns.slice(0,20)));
+        // Мы на странице подземелья — сбрасываем кулдаун чтобы можно было вернуться
+        localStorage.removeItem(CD_KEY);
 
         function exitDungeon(reason) {
-            console.log('[clandungeon] ВЫХОД:', reason, '→ идём на главную, кулдаун 10 мин');
-            localStorage.setItem('fadd_clandungeon_cd', Date.now().toString());
+            console.log('[clandungeon] ВЫХОД:', reason, '→ кулдаун 10 мин, идём на главную');
+            localStorage.setItem(CD_KEY, now.toString());
             window.location.href = 'https://tiwar.ru/';
             return false;
         }
 
-        // Кнопка "В подземелье" (экран награды)
+        const bodyText = document.body ? (document.body.textContent || '') : '';
+        console.log('[clandungeon] дамп:', bodyText.replace(/\s+/g,' ').trim().slice(0, 200));
+
+        // Экран награды
         const closeDungeonBtn = Array.from(document.querySelectorAll('a.btn')).find(a => {
             const href = (a.getAttribute('href') || '').trim();
             const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
@@ -2979,7 +2981,7 @@
                 return exitDungeon('ударов 0');
             }
         } else {
-            console.log('[clandungeon] текст "Осталось ударов" НЕ найден на странице');
+            console.log('[clandungeon] текст "Осталось ударов" не найден');
         }
 
         const attackBtn = findGameButton(['Атаковать монстра'], '/clandungeon/attack');
