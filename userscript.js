@@ -93,95 +93,7 @@
         'ну здравствуй, новый боец!',
         'привет-привет, заходи к нам почаще',
         'хеллоу, добро пожаловать на борт!',
-        'привет! Удачи и хорошего фарма',
-        'добро пожаловать в нашу банду!',
-        'хай, рад видеть новое лицо!',
-        'привет, теперь ты с нами!',
-        'здарова, располагайся как дома',
-        'привет! Заходи в чат, не молчи',
-        'добро пожаловать, боец!',
-        'хай-хай, удачи в наших рядах',
-        'привет! Будь как дома, у нас тут уютно',
-        'ну вот, ещё один герой в команде',
-        'приветик, добро пожаловать!',
-        'хей, рады что ты с нами',
-        'привет! Не пропадай, общайся',
-        'добро пожаловать, расти с нами',
-        'хай! Тут все свои, не стесняйся',
-        'привет, новый соклановец!',
-        'здравствуй, удачи в боях с нами',
-        'хеллоу! Заглядывай в чат почаще',
-        'привет, теперь ты часть команды',
-        'добро пожаловать, надеемся на тебя!',
-        'хай, новенький, располагайся',
-        'привет! Рады новому игроку',
-        'ну привет, удачи и хорошего фарма',
-        'добро пожаловать на борт, капитан!',
-        'хэй, добро пожаловать в семью',
-        'привет тебе, новый друг!',
-        'здарова, теперь будем фармить вместе',
-        'хай! Добро пожаловать, не теряйся',
-        'привет, отличный выбор клана сделал',
-        'добро пожаловать, погнали в бои!',
-        'хей-хей, рады видеть тебя',
-        'привет! Тут весело, оставайся с нами',
-        'ну здравствуй, удачи тебе',
-        'добро пожаловать, новый соратник',
-        'хай, теперь мы команда',
-        'привет, заходи почаще, не теряйся',
-        'здравствуй, боец, удачи в клане',
-        'хеллоу-хеллоу, добро пожаловать',
-        'привет! Будем рады твоей активности',
-        'добро пожаловать, новый игрок!',
-        'хай, надеюсь сработаемся',
-        'привет тебе и удачи в наших рядах',
-        'ну вот и новенький, привет!',
-        'добро пожаловать, не пропадай',
-        'хей, располагайся у нас',
-        'привет! Теперь ты с командой',
-        'здарова, удачи и хорошего фарма',
-        'хай-хай, заходи в чат, общайся',
-        'привет, рад новому лицу в клане',
-        'добро пожаловать, новый герой',
-        'хеллоу, теперь мы вместе',
-        'привет! Не молчи, мы дружные',
-        'ну здравствуй, новенький боец',
-        'добро пожаловать в нашу команду',
-        'хай, удачи в твоём пути с нами',
-        'привет тебе, располагайся смело',
-        'здравствуй, новый соклановец',
-        'хей-хей, добро пожаловать к нам',
-        'привет! Заходи почаще, не теряйся тут',
-        'добро пожаловать, новый друг',
-        'хай, рады что выбрал нас',
-        'привет, удачи и хорошего фарма тебе',
-        'ну вот, ещё один в нашей команде',
-        'добро пожаловать, не стесняйся спрашивать',
-        'хеллоу! Теперь ты в нашей банде',
-        'привет тебе, новый игрок',
-        'здарова, добро пожаловать на борт',
-        'хай-хай, удачи в боях',
-        'привет! Мы рады тебе, общайся смело',
-        'добро пожаловать, новенький',
-        'хей, теперь мы одна команда',
-        'привет, удачи в нашем клане',
-        'ну здравствуй, рады видеть тебя у нас',
-        'добро пожаловать, не теряйся, общайся',
-        'хай, отличного тебе фарма',
-        'привет тебе и удачи в боях',
-        'здравствуй, новый боец нашей команды',
-        'хеллоу-хеллоу, рады тебе',
-        'привет! Заходи в чат почаще, не молчи',
-        'добро пожаловать, теперь мы вместе',
-        'хай, удачи и хорошего настроения',
-        'привет, рады что ты с нами теперь',
-        'ну вот и пополнение, привет!',
-        'добро пожаловать, новый соратник наш',
-        'хей-хей, располагайся как дома у нас',
-        'привет тебе, удачи в клане',
-        'здарова, рад видеть нового бойца',
-        'хай-хай, добро пожаловать в команду',
-        'привет! Будем рады твоим успехам'
+        'привет! Удачи и хорошего фарма'
     ];
 
     // Страницы для сканирования таймеров и какие маркеры/задачи там проверять
@@ -1569,25 +1481,6 @@
     function runSequentialFarm() {
         if (!document.body) return;
 
-        // ПРИОРИТЕТ #0: если прямо сейчас идёт реальный бой (любого типа —
-        // охота, колизей, клан-колизей, долина бессмертных, король, алтари,
-        // клан-война) — НИКОГДА не переключаемся на другую задачу из очереди.
-        // Бросаем всё и продолжаем именно этот бой, пока он не закончится.
-        if (isAnyFightPage()) {
-            const fightUrl = window.location.href;
-            let handled;
-            if (fightUrl.includes('/coliseum/') && !fightUrl.includes('/clancoliseum/')) {
-                handled = runColiseum(true);
-            } else if (fightUrl.includes('/clancoliseum/')) {
-                handled = runClancoliseum(true);
-            } else {
-                handled = runAutoHuntActions(true);
-            }
-            // false означает "бой/раунд закончен, ничего больше не делаем здесь" —
-            // в этом случае не блокируем очередь, даём пройти дальше по циклу.
-            if (handled !== false) return;
-        }
-
         const now = Date.now();
         const last = parseInt(localStorage.getItem(SEQUENTIAL_LAST_KEY) || '0', 10);
 
@@ -1603,7 +1496,7 @@
         for (let offset = 0; offset < order.length; offset++) {
             const task = order[(startIndex + offset) % order.length];
 
-            const noCooldownTasks = ['campaign', 'career', 'battles', 'league', 'coliseum', 'treasury', 'clanrecruit', 'clangreet'];
+            const noCooldownTasks = ['campaign', 'career', 'clandungeon', 'battles', 'league', 'coliseum', 'treasury', 'clanrecruit', 'clangreet'];
             if (!noCooldownTasks.includes(task) && isTaskOnCooldown(task)) {
                 console.log('[sequential-farm] пропуск по таймеру:', SEQUENTIAL_TASK_LABELS[task]);
                 continue;
@@ -2598,14 +2491,6 @@
     }
 
     function runAutoHunt() {
-        try {
-            runAutoHuntInner();
-        } catch (e) {
-            console.log('[fadd] ОШИБКА в основном цикле:', e && e.message ? e.message : e, e && e.stack ? e.stack : '');
-        }
-    }
-
-    function runAutoHuntInner() {
         settings.autoClanDungeon = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}').autoClanDungeon ?? false;
 
         // Если идёт сканирование таймеров — обрабатываем его в приоритете
@@ -2919,59 +2804,58 @@
         if (!force && !settings.autoClanDungeon) return false;
 
         const url = window.location.href;
-        const now = Date.now();
 
         if (!url.includes('/clandungeon')) {
-            console.log('[clandungeon] идём на страницу подземелья');
             window.location.href = 'https://tiwar.ru/clandungeon/';
             return true;
         }
 
-        // Экран награды — закрываем
+        // Если открыт экран награды — закрываем его кнопкой "В подземелье", чтобы продолжить
         const closeDungeonBtn = Array.from(document.querySelectorAll('a.btn')).find(a => {
             const href = (a.getAttribute('href') || '').trim();
             const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
             return href === '?close' && text.includes('В подземелье');
         });
+
         if (closeDungeonBtn) {
             const lastClose = parseInt(localStorage.getItem('fadd_clandungeon_last') || '0', 10);
-            if (now - lastClose < 1000) return true;
-            localStorage.setItem('fadd_clandungeon_last', now.toString());
-            console.log('[clandungeon] закрываем экран награды');
+            if (Date.now() - lastClose < 1000) return true;
+            localStorage.setItem('fadd_clandungeon_last', Date.now().toString());
+            console.log('[clandungeon] закрываем награду, возвращаемся в подземелье');
             forceClick(closeDungeonBtn);
             return true;
         }
 
-        const bodyText = document.body ? (document.body.textContent || '') : '';
+        const bodyText = document.body.textContent || '';
 
         if (bodyText.includes('Удары закончились')) {
-            console.log('[clandungeon] удары закончились, ставим кулдаун');
             rememberCooldownFromText('clandungeon', 'ударов через');
-            window.location.href = 'https://tiwar.ru/';
             return false;
         }
 
         const match = bodyText.match(/Осталось ударов:\s*(\d+)/i);
+
         if (match) {
             const hits = parseInt(match[1], 10);
             console.log('[clandungeon] ударов осталось:', hits);
+
             if (hits <= 0) {
                 rememberCooldownFromText('clandungeon', 'ударов через');
-                window.location.href = 'https://tiwar.ru/';
                 return false;
             }
         }
 
         const attackBtn = findGameButton(['Атаковать монстра'], '/clandungeon/attack');
+
         if (!attackBtn) {
-            // Нет кнопки и нет текста про удары — ставим кулдаун 30 минут и уходим
-            console.log('[clandungeon] кнопка атаки не найдена, кулдаун 30 мин');
-            setTaskCooldown('clandungeon', 30 * 60 * 1000);
-            window.location.href = 'https://tiwar.ru/';
+            rememberCooldownFromText('clandungeon', 'ударов через');
+            console.log('[clandungeon] кнопка атаки не найдена');
             return false;
         }
 
+        const now = Date.now();
         const last = parseInt(localStorage.getItem('fadd_clandungeon_last') || '0', 10);
+
         if (now - last < 1000) return true;
 
         localStorage.setItem('fadd_clandungeon_last', now.toString());
@@ -4193,7 +4077,6 @@
     // ── КОЛИЗЕЙ ────────────────────────────────────────────────────────────────
 
     const COL_REFRESH_LAST_KEY  = 'fadd_col_refresh_last';
-    const COL_FOUGHT_THIS_VISIT_KEY = 'fadd_col_fought_this_visit';
     const COL_ATTACK_LAST_KEY   = 'fadd_col_attack_last';
     const COL_GRASS_LAST_KEY    = 'fadd_col_grass_last';
     const COL_STONE_LAST_KEY    = 'fadd_col_stone_last';
@@ -4233,19 +4116,9 @@
             (a.textContent || '').includes('Начать новый бой')
         );
         if (newFightBtn) {
-            const alreadyFought = localStorage.getItem(COL_FOUGHT_THIS_VISIT_KEY) === '1';
-            if (alreadyFought) {
-                // Один бой уже проведён в этом заходе — не лезем в следующий,
-                // отдаём очередь дальше по циклу (шахта/кузница/арена/и т.д.)
-                localStorage.removeItem(COL_FOUGHT_THIS_VISIT_KEY);
-                console.log('[coliseum] один бой проведён, передаём очередь дальше по циклу');
-                return false;
-            }
-
             const last = parseInt(localStorage.getItem('fadd_col_nav_last') || '0', 10);
             if (now - last < 1500) return true;
             localStorage.setItem('fadd_col_nav_last', now.toString());
-            localStorage.setItem(COL_FOUGHT_THIS_VISIT_KEY, '1');
             console.log('[coliseum] новый бой');
             forceClick(newFightBtn);
             return true;
