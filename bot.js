@@ -1,106 +1,102 @@
+// bot.js
+// Открывает headless Chromium, логинится через cookies, внедряет userscript.js
+// (ваш скрипт авто-охоты) и держит страницу открытой заданное время.
+
 const { chromium } = require('playwright');
 const fs = require('fs');
+const path = require('path');
 
-const ACCOUNT_INDEX = parseInt(process.env.ACCOUNT_INDEX || '1', 10);
+const GAME_URL = process.env.GAME_URL || 'https://tiwar.ru/distshores/hunt';
+// Сколько минут держать браузер открытым за один запуск.
+// GitHub Actions free runner убивает job жёстко на 360 минутах (6 часов) —
+// берём с запасом меньше, чтобы процесс завершился сам и чисто.
+const RUN_MINUTES = parseInt(process.env.RUN_MINUTES || '340', 10);
+// Раз в сколько минут просто проверяем/перезагружаем страницу как safety-net
+// (на случай зависания сети, разрыва соединения и т.п.)
+const RELOAD_EVERY_MINUTES = parseInt(process.env.RELOAD_EVERY_MINUTES || '30', 10);
 
-const ORDER_DEFAULT = [
-  'clanrecruit','clangreet','mine','forge','cave',
-  'clandungeon','campaign','career','sage','battles',
-  'arena','treasury','undying'
-];
-
-const BATTLES_ALL_ON = {
-  battlesEnableUndying: true,
-  battlesEnableClanfight: true,
-  battlesEnableKing: true,
-  battlesEnableAltars: true,
-  battlesEnableClancoliseum: true,
-  autoUndying: true,
-  autoClanfight: true,
-  autoKing: true,
-  autoAltars: true,
-};
-
-const ACCOUNT_CONFIGS = {
-  1: {
-    name: 'Kaneki',
-    cookiesEnv: 'COOKIES_JSON_1',
-    settings: {
-      autoSequentialFarm: true,
-      sequentialOrder: ORDER_DEFAULT,
-      ...BATTLES_ALL_ON,
+function loadCookies() {
+    const raw = process.env.COOKIES_JSON;
+    if (!raw) {
+        throw new Error(
+            'Переменная COOKIES_JSON не задана. Добавьте секрет в репозитории ' +
+            '(Settings -> Secrets and variables -> Actions -> New repository secret).'
+        );
     }
-  },
-  2: {
-    name: 'Black Fly',
-    cookiesEnv: 'COOKIES_JSON_2',
-    settings: {
-      autoSequentialFarm: true,
-      sequentialOrder: ORDER_DEFAULT,
-      ...BATTLES_ALL_ON,
-    }
-  }
-};
+    return JSON.parse(raw);
+}
+
+function loadUserscript() {
+    return fs.readFileSync(path.join(__dirname, 'userscript.js'), 'utf8');
+}
+
+async function enableSequentialFarm(page) {
+    // Включаем нужные настройки скрипта в localStorage страницы,
+    // т.к. localStorage не переносится через cookies — это отдельное хранилище.
+    await page.evaluate(() => {
+        const KEY = 'fadd_tiwar_settings';
+        let s = {};
+        try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+        s.autoSequentialFarm = true;
+        localStorage.setItem(KEY, JSON.stringify(s));
+    });
+}
 
 (async () => {
-  const config = ACCOUNT_CONFIGS[ACCOUNT_INDEX];
+    console.log('[bot] Запуск, время:', new Date().toISOString());
 
-  if (!config) {
-    console.error('Unknown account:', ACCOUNT_INDEX);
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({
+        viewport: { width: 1280, height: 900 }
+    });
+
+    await context.addCookies(loadCookies());
+
+    const userscript = loadUserscript();
+    // addInitScript выполняется на каждой новой странице/перезагрузке
+    // до того, как игра успеет загрузиться — это аналог Tampermonkey.
+    await context.addInitScript({ content: userscript });
+
+    const page = await context.newPage();
+
+    page.on('console', msg => console.log('[page]', msg.text()));
+
+    console.log('[bot] Открываю', GAME_URL);
+    await page.goto(GAME_URL, { waitUntil: 'load' });
+
+    await enableSequentialFarm(page);
+    await page.reload({ waitUntil: 'load' });
+
+    console.log('[bot] Страница загружена, скрипт внедрён. Работаю', RUN_MINUTES, 'минут.');
+
+    const endAt = Date.now() + RUN_MINUTES * 60 * 1000;
+
+    while (Date.now() < endAt) {
+        const msLeft = endAt - Date.now();
+        const waitMs = Math.min(RELOAD_EVERY_MINUTES * 60 * 1000, msLeft);
+        await page.waitForTimeout(waitMs);
+
+        if (Date.now() >= endAt) break;
+
+        try {
+            console.log('[bot]', new Date().toISOString(), '— профилактическая перезагрузка страницы');
+            await page.reload({ waitUntil: 'load' });
+            await enableSequentialFarm(page);
+        } catch (e) {
+            console.log('[bot] Ошибка при перезагрузке:', e.message, '— пробую открыть страницу заново');
+            try {
+                await page.goto(GAME_URL, { waitUntil: 'load' });
+                await enableSequentialFarm(page);
+                await page.reload({ waitUntil: 'load' });
+            } catch (e2) {
+                console.log('[bot] Не получилось переоткрыть страницу:', e2.message);
+            }
+        }
+    }
+
+    console.log('[bot] Время вышло, закрываю браузер. Следующий запуск подхватит GitHub Actions по расписанию.');
+    await browser.close();
+})().catch(err => {
+    console.error('[bot] Критическая ошибка:', err);
     process.exit(1);
-  }
-
-  console.log(`[bot] Start account ${config.name}`);
-
-  const cookiesRaw = process.env[config.cookiesEnv];
-  if (!cookiesRaw) {
-    console.error('No cookies env:', config.cookiesEnv);
-    process.exit(1);
-  }
-
-  const cookies = JSON.parse(cookiesRaw);
-
-  const scriptContent = fs.readFileSync('userscript.js', 'utf8');
-
-  const browser = await chromium.launch({
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu'
-    ]
-  });
-
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 800 }
-  });
-
-  await context.addCookies(cookies);
-
-  const page = await context.newPage();
-
-  page.on('console', msg =>
-    console.log(`[${config.name}]`, msg.text())
-  );
-
-  await page.goto('https://tiwar.ru/', {
-    waitUntil: 'domcontentloaded',
-    timeout: 60000
-  });
-
-  await page.evaluate((cfg) => {
-    const KEY = 'fadd_tiwar_settings';
-    const merged = {
-      ...JSON.parse(localStorage.getItem(KEY) || '{}'),
-      ...cfg
-    };
-    localStorage.setItem(KEY, JSON.stringify(merged));
-  }, config.settings);
-
-  await page.addScriptTag({ content: scriptContent });
-
-  const RUN_TIME = 5 * 60 * 60 * 1000;
-  await new Promise(r => setTimeout(r, RUN_TIME));
-
-  await browser.close();
-})();
+});
