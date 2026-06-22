@@ -7,7 +7,12 @@ const fs = require('fs');
 const path = require('path');
 
 const GAME_URL = process.env.GAME_URL || 'https://tiwar.ru/distshores/hunt';
+// Сколько минут держать браузер открытым за один запуск.
+// GitHub Actions free runner убивает job жёстко на 360 минутах (6 часов) —
+// берём с запасом меньше, чтобы процесс завершился сам и чисто.
 const RUN_MINUTES = parseInt(process.env.RUN_MINUTES || '340', 10);
+// Раз в сколько минут просто проверяем/перезагружаем страницу как safety-net
+// (на случай зависания сети, разрыва соединения и т.п.)
 const RELOAD_EVERY_MINUTES = parseInt(process.env.RELOAD_EVERY_MINUTES || '30', 10);
 
 function loadCookies() {
@@ -26,6 +31,8 @@ function loadUserscript() {
 }
 
 async function enableSequentialFarm(page) {
+    // Включаем нужные настройки скрипта в localStorage страницы,
+    // т.к. localStorage не переносится через cookies — это отдельное хранилище.
     await page.evaluate(() => {
         const KEY = 'fadd_tiwar_settings';
         let s = {};
@@ -33,13 +40,26 @@ async function enableSequentialFarm(page) {
         s.autoSequentialFarm = true;
         localStorage.setItem(KEY, JSON.stringify(s));
 
+        // Порядок задач в очереди — именно такой, как задано
         const CUSTOM_ORDER = [
-            'clanrecruit', 'clangreet', 'mine', 'forge', 'cave',
-            'clandungeon', 'campaign', 'career', 'sage', 'battles',
-            'arena', 'treasury', 'undying'
+            'clanrecruit', // Авто-набор в клан
+            'clangreet',   // Авто-привет
+            'mine',        // Авто-шахта
+            'forge',       // Авто-кузница
+            'cave',        // Авто-пещера
+            'clandungeon', // Авто-подземелье
+            'campaign',    // Авто-поход
+            'career',      // Карьера
+            'sage',        // Хижина мудреца
+            'battles',     // Авто-заявки сражений
+            'arena',       // Авто-арена
+            'treasury',    // Авто-казна клана
+            'undying'      // Авто-долина бессмертных
         ];
         localStorage.setItem('fadd_custom_order', JSON.stringify(CUSTOM_ORDER));
 
+        // Всё, что НЕ входит в список выше (охота, лига, колизей, клан-задания)
+        // — замораживаем, чтобы они не выполнялись и не мешали очереди.
         const ALL_TASKS = ['arena','mine','forge','hunt','cave','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet'];
         const frozen = ALL_TASKS.filter(t => !CUSTOM_ORDER.includes(t));
         localStorage.setItem('fadd_frozen_tasks', JSON.stringify(frozen));
@@ -57,6 +77,8 @@ async function enableSequentialFarm(page) {
     await context.addCookies(loadCookies());
 
     const userscript = loadUserscript();
+    // addInitScript выполняется на каждой новой странице/перезагрузке
+    // до того, как игра успеет загрузиться — это аналог Tampermonkey.
     await context.addInitScript({ content: userscript });
 
     const page = await context.newPage();
@@ -66,6 +88,8 @@ async function enableSequentialFarm(page) {
         lastActivityAt = Date.now();
         console.log('[page]', msg.text());
     });
+    // Игра иногда показывает confirm()/alert() — без обработчика такой диалог
+    // блокирует JS на странице навечно. Автоматически подтверждаем любой диалог.
     page.on('dialog', async dialog => {
         console.log('[bot] Игровой диалог:', dialog.type(), '—', dialog.message());
         try {
@@ -74,6 +98,8 @@ async function enableSequentialFarm(page) {
             console.log('[bot] Не удалось закрыть диалог:', e.message);
         }
     });
+    // Необработанные JS-ошибки на странице (не через console.log) —
+    // без этого они проходят незаметно, и цикл выглядит "молча зависшим"
     page.on('pageerror', err => {
         lastActivityAt = Date.now();
         console.log('[bot] PAGE ERROR:', err.message);
@@ -89,7 +115,7 @@ async function enableSequentialFarm(page) {
     lastActivityAt = Date.now();
 
     const endAt = Date.now() + RUN_MINUTES * 60 * 1000;
-    const HANG_TIMEOUT_MS = 2 * 60 * 1000;
+    const HANG_TIMEOUT_MS = 2 * 60 * 1000; // 2 минуты без единого console.log — считаем зависанием
     const CHECK_EVERY_MS = 15 * 1000;
     let lastPlannedReload = Date.now();
 
