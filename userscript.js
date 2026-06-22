@@ -2919,84 +2919,62 @@
         if (!force && !settings.autoClanDungeon) return false;
 
         const url = window.location.href;
-        const now = Date.now();
-        const CD_KEY = 'fadd_clandungeon_cd';
-
-        console.log('[clandungeon] вызов, url:', url);
 
         if (!url.includes('/clandungeon')) {
-            // Проверяем кулдаун — если недавно заходили и там ничего не было
-            const cd = parseInt(localStorage.getItem(CD_KEY) || '0', 10);
-            if (now - cd < 10 * 60 * 1000) {
-                console.log('[clandungeon] кулдаун активен, пропускаем');
-                return false;
-            }
-            // Ставим кулдаун ДО перехода — чтобы пока страница грузится,
-            // следующие тики не ломились туда снова
-            localStorage.setItem(CD_KEY, now.toString());
-            console.log('[clandungeon] идём на страницу подземелья');
             window.location.href = 'https://tiwar.ru/clandungeon/';
             return true;
         }
 
-        // Мы на странице подземелья — сбрасываем кулдаун чтобы можно было вернуться
-        localStorage.removeItem(CD_KEY);
-
-        function exitDungeon(reason) {
-            console.log('[clandungeon] ВЫХОД:', reason, '→ кулдаун 10 мин, идём на главную');
-            localStorage.setItem(CD_KEY, now.toString());
-            window.location.href = 'https://tiwar.ru/';
-            return false;
-        }
-
-        const bodyText = document.body ? (document.body.textContent || '') : '';
-        console.log('[clandungeon] дамп:', bodyText.replace(/\s+/g,' ').trim().slice(0, 200));
-
-        // Экран награды
+        // Если открыт экран награды — закрываем его кнопкой "В подземелье", чтобы продолжить
         const closeDungeonBtn = Array.from(document.querySelectorAll('a.btn')).find(a => {
             const href = (a.getAttribute('href') || '').trim();
             const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
             return href === '?close' && text.includes('В подземелье');
         });
+
         if (closeDungeonBtn) {
             const lastClose = parseInt(localStorage.getItem('fadd_clandungeon_last') || '0', 10);
-            if (now - lastClose < 1000) return true;
-            localStorage.setItem('fadd_clandungeon_last', now.toString());
-            console.log('[clandungeon] закрываем экран награды');
+            if (Date.now() - lastClose < 1000) return true;
+            localStorage.setItem('fadd_clandungeon_last', Date.now().toString());
+            console.log('[clandungeon] закрываем награду, возвращаемся в подземелье');
             forceClick(closeDungeonBtn);
             return true;
         }
 
+        const bodyText = document.body.textContent || '';
+
         if (bodyText.includes('Удары закончились')) {
             rememberCooldownFromText('clandungeon', 'ударов через');
-            return exitDungeon('Удары закончились');
+            return false;
         }
 
         const match = bodyText.match(/Осталось ударов:\s*(\d+)/i);
+
         if (match) {
             const hits = parseInt(match[1], 10);
             console.log('[clandungeon] ударов осталось:', hits);
+
             if (hits <= 0) {
                 rememberCooldownFromText('clandungeon', 'ударов через');
-                return exitDungeon('ударов 0');
+                return false;
             }
-        } else {
-            console.log('[clandungeon] текст "Осталось ударов" не найден');
         }
 
         const attackBtn = findGameButton(['Атаковать монстра'], '/clandungeon/attack');
-        console.log('[clandungeon] кнопка атаки:', attackBtn ? 'НАЙДЕНА' : 'НЕ НАЙДЕНА');
 
         if (!attackBtn) {
             rememberCooldownFromText('clandungeon', 'ударов через');
-            return exitDungeon('кнопка атаки не найдена');
+            console.log('[clandungeon] кнопка атаки не найдена');
+            return false;
         }
 
+        const now = Date.now();
         const last = parseInt(localStorage.getItem('fadd_clandungeon_last') || '0', 10);
+
         if (now - last < 1000) return true;
 
         localStorage.setItem('fadd_clandungeon_last', now.toString());
-        console.log('[clandungeon] АТАКА!');
+        console.log('[clandungeon] атака');
         forceClick(attackBtn);
         return true;
     }
