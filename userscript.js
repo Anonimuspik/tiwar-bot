@@ -317,7 +317,7 @@
     <button data-tab="clan">Мой клан</button>
     <button data-tab="battles">Авто сражения</button>
     <button data-tab="other">Автофарм</button>
-    <button data-tab="schedule">Планирование</button>
+    <button data-tab="adventure">🗺 Приключение</button>
     <button data-tab="utility">🔧 Другое</button>
     <button data-tab="music">🎵 Музыка</button>
 </div>
@@ -486,8 +486,6 @@
 
     <div id="all-schedule-list" style="font-size:12px;line-height:1.8;"></div>
 </div>
-
-
 
 <div id="tab-utility" class="tab" style="display:none;">
     <div style="color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:10px;">🔧 Другое</div>
@@ -736,7 +734,6 @@
         bindCheckbox(battlesApplyUndying, 'battlesEnableUndying');
 
         buildMinePanel();
-        buildSequentialOrderPanel();
 
         // Если скан уже идёт — показать статус
         updateTimerScanStatusUI();
@@ -2143,7 +2140,7 @@
     }
 
     function findQuestRewardButton() {
-        const REWARD_TEXTS = ['Забрать награду', 'Получить награду', 'Забрать'];
+        const REWARD_TEXTS = ['Забрать награду', 'Получить награду', 'Открыть'];
         return Array.from(document.querySelectorAll('a.btn, a, button'))
             .find(a => {
                 const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
@@ -2299,42 +2296,22 @@
         }
 
         if (url.includes('/inv/chest')) {
-            // Сначала проверяем награду (Забрать награду / Получить награду)
             const rewardBtn = findQuestRewardButton();
             if (rewardBtn) {
-                console.log('[sage/chest] забираем награду');
                 forceClick(rewardBtn);
                 return true;
             }
 
-            // Ищем кнопку Использовать — сначала через стандартный поиск по .block_zero,
-            // затем fallback: любая ссылка /inv/chest/use/ на всей странице
-            let elixirBtn = findElixirUseButton();
-            if (!elixirBtn) {
-                elixirBtn = Array.from(document.querySelectorAll('a.btn, a'))
-                    .find(function(a) {
-                        const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
-                        const href = a.getAttribute('href') || a.href || '';
-                        return text.includes('Использовать') && href.includes('/inv/chest/use/');
-                    }) || null;
-                if (elixirBtn) console.log('[sage/chest] fallback: нашли кнопку Использовать');
-            }
-
+            const elixirBtn = findElixirUseButton();
             if (elixirBtn) {
                 const last = parseInt(localStorage.getItem('fadd_sage_elixir_last') || '0', 10);
-                if (Date.now() - last > 2000) {
+                if (Date.now() - last > 1000) {
                     localStorage.setItem('fadd_sage_elixir_last', Date.now().toString());
-                    console.log('[sage/chest] кликаем Использовать');
                     forceClick(elixirBtn);
-                    // Принудительно переходим по href если клик не сработал
-                    const href = elixirBtn.getAttribute('href');
-                    if (href) setTimeout(() => { window.location.href = href; }, 300);
                 }
                 return true;
             }
 
-            // Ничего не нашли — уходим на /quest/
-            console.log('[sage/chest] кнопки не найдены, уходим на /quest/');
             window.location.href = 'https://tiwar.ru/quest/';
             return true;
         }
@@ -3244,15 +3221,18 @@
             return false;
         }
 
+        // Кулдаун проверяем ДО записи в greeted — чтобы не помечать как поприветствованного зря
+        const last = parseInt(localStorage.getItem(CG_LAST_KEY) || '0', 10);
+        if (now - last < 2000) return true;
+
         const phrase = CG_PHRASES[Math.floor(Math.random() * CG_PHRASES.length)];
         const text = target.name + ', ' + phrase;
 
         input.value = text;
-        addClanGreeted(target.id);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
 
-        const last = parseInt(localStorage.getItem(CG_LAST_KEY) || '0', 10);
-        if (now - last < 1500) return true;
         localStorage.setItem(CG_LAST_KEY, now.toString());
+        addClanGreeted(target.id);
 
         console.log('[clangreet] приветствуем', target.name, '—', text);
 
@@ -3260,14 +3240,15 @@
             || Array.from(form.querySelectorAll('input[type="submit"][name="send_message"]')).pop();
 
         try {
-            if (sendBtn && typeof form.requestSubmit === 'function') {
-                form.requestSubmit(sendBtn);
+            if (sendBtn) {
+                // Используем нативный клик как казна — надёжнее requestSubmit
+                sendBtn.click();
             } else {
                 form.submit();
             }
         } catch (e) {
             console.log('[clangreet] ошибка отправки:', e);
-            form.submit();
+            try { form.submit(); } catch (_) {}
         }
 
         return true;
@@ -4334,7 +4315,6 @@
         return false;
     }
 
-
     function initUtilityTab() {
         const statusEl = document.getElementById('utility-status');
 
@@ -4450,7 +4430,6 @@
             });
         }
     }
-
 
 
     // ── МУЗЫКАЛЬНЫЙ ПЛЕЕР ─────────────────────────────────────────────────────
