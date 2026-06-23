@@ -318,8 +318,6 @@
     <button data-tab="battles">Авто сражения</button>
     <button data-tab="other">Автофарм</button>
     <button data-tab="schedule">Планирование</button>
-    <button data-tab="coins">💰 Монеты</button>
-    <button data-tab="adventure">🗺 Приключение</button>
     <button data-tab="utility">🔧 Другое</button>
     <button data-tab="music">🎵 Музыка</button>
 </div>
@@ -489,39 +487,7 @@
     <div id="all-schedule-list" style="font-size:12px;line-height:1.8;"></div>
 </div>
 
-<div id="tab-coins" class="tab" style="display:none;">
-    <div style="color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:8px;">💰 Расчёт Монет Ивента</div>
 
-    <div style="font-size:12px;margin-bottom:4px;">
-        <span style="color:#884444;">Монет в наличии:</span>
-        <span id="coins-current-display" style="color:#ff6666;margin-left:4px;">—</span>
-    </div>
-    <div style="font-size:12px;margin-bottom:10px;">
-        <span style="color:#884444;">Монет в минуту:</span>
-        <span id="coins-permin-display" style="color:#ff6666;margin-left:4px;">—</span>
-    </div>
-
-    <div id="coins-result" style="font-size:12px;line-height:1.9;"></div>
-
-    <button id="coins-calc-btn" style="margin-top:8px;width:100%;background:#1a0000;color:#cc3333;border:1px solid #5c0000;padding:4px;">
-        ⟳ Обновить
-    </button>
-</div>
-
-<div id="tab-adventure" class="tab" style="display:none;">
-    <div style="color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:8px;">🗺 Приключение</div>
-
-    <label style="font-size:12px;display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-        <input type="checkbox" id="auto-adventure">
-        Авто-приключение
-    </label>
-
-    <button id="adventure-refresh-btn" style="width:100%;background:#1a0000;color:#ff6666;border:1px solid #5c0000;padding:4px;font-size:12px;margin-bottom:8px;">
-        🔄 Обновить данные
-    </button>
-
-    <div id="adventure-info" style="font-size:12px;line-height:1.8;color:#884444;">—</div>
-</div>
 
 <div id="tab-utility" class="tab" style="display:none;">
     <div style="color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:10px;">🔧 Другое</div>
@@ -771,8 +737,6 @@
 
         buildMinePanel();
         buildSequentialOrderPanel();
-        initCoinsTab();
-        initAdventureTab();
 
         // Если скан уже идёт — показать статус
         updateTimerScanStatusUI();
@@ -2179,7 +2143,7 @@
     }
 
     function findQuestRewardButton() {
-        const REWARD_TEXTS = ['Забрать награду', 'Получить награду', 'Открыть'];
+        const REWARD_TEXTS = ['Забрать награду', 'Получить награду', 'Забрать'];
         return Array.from(document.querySelectorAll('a.btn, a, button'))
             .find(a => {
                 const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
@@ -2335,22 +2299,42 @@
         }
 
         if (url.includes('/inv/chest')) {
+            // Сначала проверяем награду (Забрать награду / Получить награду)
             const rewardBtn = findQuestRewardButton();
             if (rewardBtn) {
+                console.log('[sage/chest] забираем награду');
                 forceClick(rewardBtn);
                 return true;
             }
 
-            const elixirBtn = findElixirUseButton();
+            // Ищем кнопку Использовать — сначала через стандартный поиск по .block_zero,
+            // затем fallback: любая ссылка /inv/chest/use/ на всей странице
+            let elixirBtn = findElixirUseButton();
+            if (!elixirBtn) {
+                elixirBtn = Array.from(document.querySelectorAll('a.btn, a'))
+                    .find(function(a) {
+                        const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
+                        const href = a.getAttribute('href') || a.href || '';
+                        return text.includes('Использовать') && href.includes('/inv/chest/use/');
+                    }) || null;
+                if (elixirBtn) console.log('[sage/chest] fallback: нашли кнопку Использовать');
+            }
+
             if (elixirBtn) {
                 const last = parseInt(localStorage.getItem('fadd_sage_elixir_last') || '0', 10);
-                if (Date.now() - last > 1000) {
+                if (Date.now() - last > 2000) {
                     localStorage.setItem('fadd_sage_elixir_last', Date.now().toString());
+                    console.log('[sage/chest] кликаем Использовать');
                     forceClick(elixirBtn);
+                    // Принудительно переходим по href если клик не сработал
+                    const href = elixirBtn.getAttribute('href');
+                    if (href) setTimeout(() => { window.location.href = href; }, 300);
                 }
                 return true;
             }
 
+            // Ничего не нашли — уходим на /quest/
+            console.log('[sage/chest] кнопки не найдены, уходим на /quest/');
             window.location.href = 'https://tiwar.ru/quest/';
             return true;
         }
@@ -2524,9 +2508,6 @@
             return;
         }
 
-        if (settings.autoAdventure) {
-            runAdventure();
-        }
 
         if (settings.autoHunt1) {
             runAutoHuntActions(false);
@@ -4353,539 +4334,6 @@
         return false;
     }
 
-    // ── РАСЧЁТ МОНЕТ ИВЕНТА ────────────────────────────────────────────────────
-
-    const EVENT_REWARDS = [
-        { label: 'Награда 18', cost: 1295 },
-        { label: 'Награда 20', cost: 1974 },
-        { label: 'Награда 22', cost: 2940 },
-        { label: 'Награда 24', cost: 4480 },
-        { label: 'Награда 26', cost: 6300 },
-    ];
-
-    const COINS_SCAN_KEY   = 'fadd_coins_scan_step';   // 'idle' | 'storage' | 'hrating' | 'done'
-    const COINS_DATA_KEY   = 'fadd_coins_data';         // { current, perMin }
-    const COINS_RESULT_KEY = 'fadd_coins_result_html';  // готовый HTML результата
-
-    function parseCoins(str) {
-        if (!str) return null;
-        str = str.trim().replace(/\s/g, '').replace(',', '.');
-        const m = str.match(/^([\d.]+)([KkMmBbGg]?)$/);
-        if (!m) return null;
-        let val = parseFloat(m[1]);
-        const suf = m[2].toUpperCase();
-        if (suf === 'K') val *= 1e3;
-        else if (suf === 'M') val *= 1e6;
-        else if (suf === 'B' || suf === 'G') val *= 1e9;
-        return isNaN(val) ? null : val;
-    }
-
-    function formatCoins(n) {
-        if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
-        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-        return Math.round(n).toString();
-    }
-
-    function formatTime(minutes) {
-        if (!isFinite(minutes) || minutes < 0) return '—';
-        const h = Math.floor(minutes / 60);
-        const m = Math.round(minutes % 60);
-        if (h === 0) return `${m} мин`;
-        if (h < 24) return `${h}ч ${m}м`;
-        const d = Math.floor(h / 24);
-        const rh = h % 24;
-        return `${d}д ${rh}ч ${m}м`;
-    }
-
-    // Парсит текущие монеты со страницы /distshores/storage
-    function parseCoinsFromStorage() {
-        const allText = document.body?.textContent || '';
-        const m = allText.match(/Монет в наличии[^\d]*([\d.,]+[KkMmBbGgTt]?)/i);
-        return m ? parseCoins(m[1].trim()) : null;
-    }
-
-    // Парсит монеты в минуту со страницы /distshores/hrating
-    function parseCoinsPerMinFromHrating() {
-        const allText = document.body?.textContent || '';
-        const m = allText.match(/\(\+([\d.,]+[KkMmBbGgTt]?)\s*монет\s*в\s*минуту\)/i)
-               || allText.match(/\(([\d.,]+[KkMmBbGgTt]?)\s*монет\s*в\s*минуту\)/i);
-        return m ? parseCoins(m[1].trim()) : null;
-    }
-
-    const EVENT_DAYS_LEFT = 16; // дней до конца ивента
-
-    function buildCoinsResultHTML(current, perMin) {
-        const minsLeft = EVENT_DAYS_LEFT * 24 * 60;
-        let html = '';
-        let cumCost = 0;
-        EVENT_REWARDS.forEach(r => {
-            cumCost += r.cost * 1e6;
-            const need = cumCost - current;
-            if (need <= 0) {
-                html += `<div style="margin-bottom:4px;">🟢 <b style="color:#ff2222;">${r.label}</b> — уже доступна!</div>`;
-            } else {
-                const mins = need / perMin;
-                const reqPerMin = need / minsLeft; // нужно монет/мин чтобы успеть
-                html += `<div style="margin-bottom:6px;">🟡 <b style="color:#ff3333;">${r.label}</b> — ещё <span style="color:#ff6666;">${formatCoins(need)}</span> → <span style="color:#f90;">${formatTime(mins)}</span><br><span style="color:#773333;font-size:11px;padding-left:14px;">нужно мин: <span style="color:#f77;">${formatCoins(reqPerMin)}/мин</span></span></div>`;
-            }
-        });
-        return html;
-    }
-
-    // Рендерит сохранённые данные в меню (не делает переходов)
-    function renderCoinsSaved() {
-        try {
-            const data = JSON.parse(localStorage.getItem(COINS_DATA_KEY) || 'null');
-            const savedHTML = localStorage.getItem(COINS_RESULT_KEY) || '';
-
-            const curDisplay = document.getElementById('coins-current-display');
-            const perDisplay = document.getElementById('coins-permin-display');
-            const result     = document.getElementById('coins-result');
-            const btn        = document.getElementById('coins-calc-btn');
-
-            const step = localStorage.getItem(COINS_SCAN_KEY) || 'idle';
-            const scanning = (step !== 'idle' && step !== 'done');
-
-            if (curDisplay) curDisplay.textContent = data?.current != null ? formatCoins(data.current) : '—';
-            if (perDisplay) perDisplay.textContent = data?.perMin  != null ? formatCoins(data.perMin) + '/мин' : '—';
-            if (result)     result.innerHTML = savedHTML || (scanning ? '⏳ Сбор данных...' : '');
-            if (btn)        btn.textContent = scanning ? '⏳ Сбор данных...' : '⟳ Обновить';
-        } catch (e) {}
-    }
-
-    // Запускает цепочку: storage → hrating → расчёт
-    function startCoinsScan() {
-        localStorage.setItem(COINS_SCAN_KEY, 'storage');
-        localStorage.removeItem(COINS_DATA_KEY);
-        localStorage.removeItem(COINS_RESULT_KEY);
-        renderCoinsSaved();
-        window.location.href = 'https://tiwar.ru/distshores/storage';
-    }
-
-    // Вызывается на каждой странице при загрузке — продолжает цепочку если нужно
-    function runCoinsScanStep() {
-        const step = localStorage.getItem(COINS_SCAN_KEY) || 'idle';
-        const url  = window.location.pathname;
-
-        if (step === 'storage' && url.includes('/distshores/storage')) {
-            const current = parseCoinsFromStorage();
-            let data = {};
-            try { data = JSON.parse(localStorage.getItem(COINS_DATA_KEY) || '{}'); } catch(e){}
-            data.current = current;
-            localStorage.setItem(COINS_DATA_KEY, JSON.stringify(data));
-            localStorage.setItem(COINS_SCAN_KEY, 'hrating');
-            window.location.href = 'https://tiwar.ru/distshores/hrating';
-            return;
-        }
-
-        if (step === 'hrating' && url.includes('/distshores/hrating')) {
-            const perMin = parseCoinsPerMinFromHrating();
-            let data = {};
-            try { data = JSON.parse(localStorage.getItem(COINS_DATA_KEY) || '{}'); } catch(e){}
-            data.perMin = perMin;
-            localStorage.setItem(COINS_DATA_KEY, JSON.stringify(data));
-
-            // Считаем результат
-            if (data.current != null && data.perMin != null && data.perMin > 0) {
-                localStorage.setItem(COINS_RESULT_KEY, buildCoinsResultHTML(data.current, data.perMin));
-            } else {
-                localStorage.setItem(COINS_RESULT_KEY, '<span style="color:#f66;">Не удалось получить данные.</span>');
-            }
-
-            localStorage.setItem(COINS_SCAN_KEY, 'done');
-
-            // Возвращаемся назад (history.back() или просто идём на storage)
-            history.back();
-            return;
-        }
-    }
-
-    // ── ПРИКЛЮЧЕНИЕ ───────────────────────────────────────────────────────────
-
-    const ADVENTURE_NAV_KEY    = 'fadd_adventure_nav_last';
-    const ADVENTURE_DATA_KEY   = 'fadd_adventure_data';
-    const ADVENTURE_DONE_KEY   = 'fadd_adventure_done_count';
-    const ADVENTURE_NEED_KEY   = 'fadd_adventure_need_count';
-    const ADV_MIN_CHANCE = 23;
-
-    function parseAdventureData() {
-        try {
-            const taskNumEl = document.querySelector('.block_zero.center .dgreen.bold');
-            const taskNum = taskNumEl ? taskNumEl.textContent.trim() : '';
-
-            const centers = Array.from(document.querySelectorAll('.block_zero.center'));
-            let taskText = '';
-            let progressText = '';
-            let needCount = 0;
-
-            for (const el of centers) {
-                const t = el.textContent.trim();
-                if (t.startsWith('Задание')) continue;
-                if (el.querySelector('.stat_bar')) {
-                    const allText = el.textContent;
-                    const prog = allText.match(/Прогресс:\s*(\d+)\s*из\s*(\d+)/i);
-                    if (prog) {
-                        progressText = `Прогресс: ${prog[1]} из ${prog[2]}`;
-                        needCount = parseInt(prog[2], 10);
-                        localStorage.setItem(ADVENTURE_NEED_KEY, needCount.toString());
-                    }
-                    continue;
-                }
-                if (!taskText && t.length > 3 && !t.includes('До завершения') && !t.includes('Перейти')) {
-                    taskText = t;
-                }
-            }
-
-            const bonusEl = document.querySelector('.block_zero .dgreen');
-            const bonus = bonusEl ? bonusEl.textContent.trim() : '';
-
-            let goLink = null;
-            const labels = document.querySelectorAll('span.label');
-            for (const lbl of labels) {
-                if (lbl.textContent.includes('Перейти к выполнению')) {
-                    goLink = lbl.closest('a')?.getAttribute('href');
-                    break;
-                }
-            }
-
-            return { taskNum, taskText, progressText, bonus, goLink, needCount };
-        } catch(e) { return null; }
-    }
-
-    function renderAdventureInfo(data) {
-        const el = document.getElementById('adventure-info');
-        if (!el) return;
-        const done = parseInt(localStorage.getItem(ADVENTURE_DONE_KEY) || '0', 10);
-        const need = parseInt(localStorage.getItem(ADVENTURE_NEED_KEY) || '0', 10);
-        if (!data) { el.innerHTML = '<span style="color:#f66;">Нет данных. Нажми Обновить</span>'; return; }
-        el.innerHTML = `
-            <div style="color:#ff2222;font-weight:bold;">${data.taskNum || ''}</div>
-            <div style="color:#fff;margin:2px 0;">${data.taskText || ''}</div>
-            <div style="color:#6af;">${data.progressText || ''}</div>
-            <div style="color:#0d0;margin-top:2px;">Бонус: <b>${data.bonus || ''}</b></div>
-            ${need > 0 ? `<div style="color:#fa0;margin-top:4px;">Сбор: <b>${done}/${need}</b></div>` : ''}
-        `;
-    }
-
-    function runAdventureCave() {
-        const now = Date.now();
-        const last = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-        if (now - last < 3000) return true;
-
-        // Идёт добыча — есть кнопка "Ускорить за..."
-        const speedUpLabel = Array.from(document.querySelectorAll('span.label')).find(l => l.textContent.includes('Ускорить за'));
-        if (speedUpLabel) {
-            const btn = speedUpLabel.closest('a');
-            if (btn) {
-                console.log('[adventure] Ускоряем добычу');
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                forceClick(btn);
-                return true;
-            }
-        }
-
-        // "Работа завершена" — считаем добытые, жмём "Новый поиск"
-        const doneText = Array.from(document.querySelectorAll('.block_zero .blue')).find(el => el.textContent.includes('Работа завершена'));
-        if (doneText) {
-            const successCount = document.querySelectorAll('.block_zero .small .green').length;
-            const prev = parseInt(localStorage.getItem(ADVENTURE_DONE_KEY) || '0', 10);
-            localStorage.setItem(ADVENTURE_DONE_KEY, (prev + successCount).toString());
-            console.log(`[adventure] Добыто: ${successCount}, всего: ${prev + successCount}`);
-            renderAdventureInfo({ taskNum: '', taskText: '', progressText: '', bonus: '' });
-
-            const newSearchLabel = Array.from(document.querySelectorAll('span.label')).find(l => l.textContent.includes('Новый поиск'));
-            if (newSearchLabel) {
-                const btn = newSearchLabel.closest('a');
-                if (btn) {
-                    localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                    forceClick(btn);
-                    return true;
-                }
-            }
-        }
-
-        // "Осмотр пещеры завершен" — проверяем шансы
-        const scanText = Array.from(document.querySelectorAll('.block_zero .blue')).find(el => el.textContent.includes('Осмотр пещеры завершен'));
-        if (scanText) {
-            const chances = Array.from(document.querySelectorAll('.block_zero .small')).map(el => {
-                const m = el.textContent.match(/Шанс добыть:\s*(\d+)%/);
-                return m ? parseInt(m[1], 10) : 0;
-            }).filter(v => v > 0);
-
-            const maxChance = chances.length ? Math.max(...chances) : 0;
-            console.log('[adventure] Шансы:', chances, 'макс:', maxChance);
-
-            if (maxChance >= ADV_MIN_CHANCE) {
-                const startLabel = Array.from(document.querySelectorAll('span.label')).find(l => l.textContent.includes('Начать добычу'));
-                if (startLabel) {
-                    const btn = startLabel.closest('a');
-                    if (btn) {
-                        console.log('[adventure] Шанс высокий (' + maxChance + '%) → Начать добычу');
-                        localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                        forceClick(btn);
-                        return true;
-                    }
-                }
-            } else {
-                const greyLink = document.querySelector('a.grey[href*="/cave/down/"]');
-                if (greyLink) {
-                    console.log('[adventure] Шанс низкий (' + maxChance + '%) → Новый поиск');
-                    localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                    forceClick(greyLink);
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    function isAdventureDone() {
-        const links = document.querySelectorAll('a[href*="/questrnd/"]');
-        for (const a of links) {
-            if ((a.parentElement?.textContent || '').includes('(+)')) return true;
-        }
-        return false;
-    }
-
-    function runAdventureLeague() {
-        const now = Date.now();
-        const last = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-        if (now - last < 1000) return true;
-
-        if (isAdventureDone()) {
-            console.log('[adventure/league] (+) → questrnd');
-            localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-            window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-            return true;
-        }
-
-        const fightLeftEl = Array.from(document.querySelectorAll('.block_zero')).find(el => el.textContent.includes('Осталось боев'));
-        const fightsLeft = fightLeftEl ? parseInt((fightLeftEl.textContent.match(/Осталось боев:\s*(\d+)/) || [])[1] || '99', 10) : 99;
-
-        if (fightsLeft === 0) {
-            const refreshLabel = Array.from(document.querySelectorAll('span.label')).find(l => l.textContent.includes('Восстановить за'));
-            if (refreshLabel) {
-                const btn = refreshLabel.closest('a');
-                if (btn) {
-                    console.log('[adventure/league] Восстанавливаем бои');
-                    localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                    forceClick(btn);
-                    return true;
-                }
-            }
-        }
-
-        const blocks = document.querySelectorAll('.block_zero');
-        let weakestBtn = null;
-        let weakestTotal = Infinity;
-        for (const block of blocks) {
-            const attackLabel = Array.from(block.querySelectorAll('span.label')).find(l => l.textContent.includes('Атаковать'));
-            if (!attackLabel) continue;
-            const attackBtn = attackLabel.closest('a');
-            if (!attackBtn) continue;
-            const nums = block.textContent.match(/(?:Сила|Жизнь|Удача|Броня):\s*(\d+)/g);
-            if (!nums) continue;
-            const total = nums.reduce((sum, s) => { const m = s.match(/(\d+)/); return sum + (m ? parseInt(m[1], 10) : 0); }, 0);
-            if (total < weakestTotal) { weakestTotal = total; weakestBtn = attackBtn; }
-        }
-
-        if (weakestBtn) {
-            console.log(`[adventure/league] Атакуем слабейшего (${weakestTotal})`);
-            localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-            forceClick(weakestBtn);
-            return true;
-        }
-        return false;
-    }
-
-    function getAdventureTaskType() {
-        try {
-            const data = JSON.parse(localStorage.getItem(ADVENTURE_DATA_KEY) || 'null');
-            if (!data?.goLink) return null;
-            if (data.goLink.includes('/cave/')) return 'cave';
-            if (data.goLink.includes('/league/')) return 'league';
-            if (data.goLink.includes('/effshop/')) return 'effshop';
-            if (data.goLink.includes('/arena/')) return 'arena';
-            if (data.goLink.includes('/coliseum/')) return 'coliseum';
-            if (data.goLink.includes('/inv/chest/')) return 'elixir';
-            return 'other';
-        } catch(e) { return null; }
-    }
-
-    function runAdventure() {
-        if (!settings.autoAdventure) return false;
-        const url = window.location.href;
-        const now = Date.now();
-
-        if (url.includes('/cave/')) return runAdventureCave();
-
-        if (url.includes('/arena') && getAdventureTaskType() === 'arena') {
-            const last = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-            if (now - last < 1000) return true;
-            // (+) = задание выполнено — уходим
-            if (isQuestGroupDone()) {
-                console.log('[adventure/arena] (+) задание выполнено');
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-                return true;
-            }
-            return runAdventureArena();
-        }
-
-        if (url.includes('/coliseum') && getAdventureTaskType() === 'coliseum') {
-            const lastCol = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-            if (now - lastCol < 1000) return true;
-            // (+) = задание выполнено — уходим
-            if (isQuestGroupDone()) {
-                console.log('[adventure/coliseum] (+) задание выполнено');
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-                return true;
-            }
-            return runColiseum(true);
-        }
-
-        if (url.includes('/inv/chest') && getAdventureTaskType() === 'elixir') {
-            const lastElx = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-            if (now - lastElx < 1500) return true;
-
-            // (+) = задание выполнено — уходим
-            if (isQuestGroupDone()) {
-                console.log('[adventure/elixir] (+) задание выполнено');
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-                return true;
-            }
-
-            // Берём эликсир, которого больше всего по количеству
-            const elixirBtn = findBestElixirButton();
-            if (elixirBtn) {
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                console.log('[adventure/elixir] активируем эликсир (макс. количество)');
-                forceClick(elixirBtn);
-                return true;
-            }
-
-            // Эликсиров не осталось — уходим
-            console.log('[adventure/elixir] эликсиры закончились, уходим');
-            localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-            window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-            return true;
-        }
-
-        if (url.includes('/effshop/') && getAdventureTaskType() === 'effshop') {
-            const last = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-            if (now - last < 1500) return true;
-            if (isQuestGroupDone()) {
-                console.log('[adventure/effshop] задание выполнено (+)');
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-                return true;
-            }
-            const buyHref = Array.from(document.querySelectorAll('a'))
-                .map(a => a.getAttribute('href') || '')
-                .find(h => /\/effshop\/\d+\/\?r=/.test(h));
-            if (buyHref) {
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                console.log('[adventure/effshop] покупаем усиление');
-                window.location.href = 'https://tiwar.ru' + buyHref;
-            } else {
-                window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-            }
-            return true;
-        }
-
-        if (url.includes('/league/') && getAdventureTaskType() === 'league') {
-            const last = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-            if (now - last < 1000) return true;
-            if (isAdventureDone()) {
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-                return true;
-            }
-            if (url.includes('/league/fight/')) {
-                localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                window.location.href = 'https://tiwar.ru/league/';
-                return true;
-            }
-            return runAdventureLeague();
-        }
-
-        if (url.includes('/questrnd/')) {
-            const data = parseAdventureData();
-            if (data) {
-                localStorage.setItem(ADVENTURE_DATA_KEY, JSON.stringify(data));
-                renderAdventureInfo(data);
-            }
-
-            const rewardLabel = Array.from(document.querySelectorAll('span.label')).find(l => l.textContent.includes('Получить награду'));
-            if (rewardLabel) {
-                const btn = rewardLabel.closest('a');
-                if (btn) {
-                    const last = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-                    if (now - last >= 1000) {
-                        console.log('[adventure] Получаем награду');
-                        localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                        forceClick(btn);
-                        return true;
-                    }
-                }
-            }
-
-            if (data?.goLink) {
-                const last = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-                if (now - last >= 1000) {
-                    localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-                    window.location.href = data.goLink;
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        const last = parseInt(localStorage.getItem(ADVENTURE_NAV_KEY) || '0', 10);
-        if (now - last >= 300000) {
-            localStorage.setItem(ADVENTURE_NAV_KEY, now.toString());
-            window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-            return true;
-        }
-        return false;
-    }
-
-
-    function initAdventureTab() {
-        try {
-            const saved = JSON.parse(localStorage.getItem(ADVENTURE_DATA_KEY) || 'null');
-            if (saved) renderAdventureInfo(saved);
-        } catch(e) {}
-
-        const cb = document.getElementById('auto-adventure');
-        if (cb) {
-            cb.checked = settings.autoAdventure;
-            cb.addEventListener('change', () => {
-                settings.autoAdventure = cb.checked;
-                saveSettings();
-            });
-        }
-
-        const btn = document.getElementById('adventure-refresh-btn');
-        if (btn) {
-            btn.addEventListener('click', () => {
-                localStorage.setItem(ADVENTURE_NAV_KEY, '0');
-                localStorage.removeItem(ADVENTURE_DONE_KEY);
-                window.location.href = 'https://tiwar.ru/questrnd/?group=4';
-            });
-        }
-
-        if (window.location.href.includes('/questrnd/')) {
-            const data = parseAdventureData();
-            if (data) {
-                localStorage.setItem(ADVENTURE_DATA_KEY, JSON.stringify(data));
-                renderAdventureInfo(data);
-            }
-        }
-    }
 
     function initUtilityTab() {
         const statusEl = document.getElementById('utility-status');
@@ -5004,28 +4452,6 @@
     }
 
 
-    function initCoinsTab() {
-        // Продолжаем скан если был запущен
-        runCoinsScanStep();
-
-        // Показываем сохранённые данные
-        renderCoinsSaved();
-
-        const btn = document.getElementById('coins-calc-btn');
-        if (btn) {
-            btn.addEventListener('click', () => {
-                const step = localStorage.getItem(COINS_SCAN_KEY) || 'idle';
-                if (step !== 'idle' && step !== 'done') return; // уже идёт скан
-                startCoinsScan();
-            });
-        }
-
-        // При переключении на вкладку — показать сохранённое
-        const tabBtn = document.querySelector('[data-tab="coins"]');
-        if (tabBtn) {
-            tabBtn.addEventListener('click', renderCoinsSaved);
-        }
-    }
 
     // ── МУЗЫКАЛЬНЫЙ ПЛЕЕР ─────────────────────────────────────────────────────
 
