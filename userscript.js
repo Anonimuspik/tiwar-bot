@@ -2104,6 +2104,14 @@
             return false;
         }
 
+        // Нет HP/энергии — сообщение «Для нападения надо минимум...»
+        const noRes = Array.from(document.querySelectorAll('.dred'))
+            .some(el => el.textContent.includes('Для нападения надо'));
+        if (noRes) {
+            console.log('[arena] нет HP/энергии, идём дальше');
+            return false;
+        }
+
         const attackBtn = Array.from(document.querySelectorAll('a.btn'))
             .find(a => (a.getAttribute('href') || '').includes('/arena/attack/'));
 
