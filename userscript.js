@@ -3742,6 +3742,30 @@
         const url = window.location.href;
         const now = Date.now();
 
+        // ── ПРИОРИТЕТ: если кнопка "Атаковать" видна — жмём ВСЕГДА,
+        //    даже если таймер говорит "не время". Бой уже идёт.
+        const attackBtn = document.querySelector('a[href*="/undying/hit/"]');
+        if (attackBtn) {
+            const lastAtk = parseInt(localStorage.getItem(UNDYING_ATK_KEY) || '0', 10);
+            if (now - lastAtk >= 5000) {
+                localStorage.setItem(UNDYING_ATK_KEY, now.toString());
+                console.log('[undying] атака');
+                forceClick(attackBtn);
+            }
+            return true;
+        }
+
+        // ── Если мы на странице /undying/hit/ но кнопки нет — страница не обновилась
+        if (url.includes('/undying/hit/')) {
+            const lastRef = parseInt(localStorage.getItem(UNDYING_REF_KEY) || '0', 10);
+            if (now - lastRef >= 5000) {
+                localStorage.setItem(UNDYING_REF_KEY, now.toString());
+                console.log('[undying] на странице боя, кнопки нет — обновляем');
+                window.location.reload();
+            }
+            return true;
+        }
+
         const diffSec = secondsToNextUndyingFight();
 
         // ── Не время Долины ────────────────────────────────────────────────────
@@ -3777,7 +3801,6 @@
         const manaBtn = document.querySelector('a[href*="/undying/mana/"]');
         if (manaBtn) {
             const manaDone = localStorage.getItem(UNDYING_MANA_KEY) || '';
-            // Используем дату+час МСК как ключ (один раз за окно боя)
             const mskD = getMskDate();
             const manaKey = `${mskD.getFullYear()}-${mskD.getMonth()}-${mskD.getDate()}-${Math.floor(mskD.getHours() / 6)}`;
             if (manaDone !== manaKey) {
@@ -3786,18 +3809,6 @@
                 forceClick(manaBtn);
                 return true;
             }
-        }
-
-        // ── Кнопка "Атаковать" — жмём 1 раз в 5 секунд ───────────────────────
-        const attackBtn = document.querySelector('a[href*="/undying/hit/"]');
-        if (attackBtn) {
-            const lastAtk = parseInt(localStorage.getItem(UNDYING_ATK_KEY) || '0', 10);
-            if (now - lastAtk >= 5000) {
-                localStorage.setItem(UNDYING_ATK_KEY, now.toString());
-                console.log('[undying] атака');
-                forceClick(attackBtn);
-            }
-            return true;
         }
 
         // ── Бой ещё не начался (нет ни одной кнопки) — обновляем каждые 5 сек
