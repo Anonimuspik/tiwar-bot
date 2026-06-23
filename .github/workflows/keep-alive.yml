@@ -2,17 +2,14 @@ name: Tiwar Auto-Hunt Bot
 
 on:
   schedule:
-    # Запуск каждые 6 часов. GitHub может задержать запуск на несколько минут
-    # относительно расписания (особенность бесплатных раннеров) — это нормально.
+    # Страховочный крон — запускает бота если цепочка вдруг оборвалась.
+    # Каждые 6 часов. В норме бот перезапускается сам через API (см. ниже).
     - cron: '0 */6 * * *'
-  # Позволяет запустить вручную из вкладки Actions для проверки
   workflow_dispatch: {}
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    # Жёсткий лимит GitHub Actions на бесплатном плане — 360 минут (6 часов).
-    # Берём с запасом, чтобы job завершился сам, а не был убит силой.
     timeout-minutes: 350
 
     steps:
@@ -33,6 +30,19 @@ jobs:
       - name: Run bot
         env:
           COOKIES_JSON: ${{ secrets.COOKIES_JSON }}
-          GAME_URL: 'https://tiwar.ru/distshores/hunt'
+          GAME_URL: 'https://tiwar.ru/'
           RUN_MINUTES: '340'
         run: node bot.js
+
+      # ── После завершения бота сразу триггерим следующий запуск ──────────────
+      # Используем встроенный GITHUB_TOKEN — дополнительных секретов не нужно.
+      - name: Trigger next run
+        if: always()   # запускаем даже если bot упал, чтобы цепочка не рвалась
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Запускаем следующую итерацию бота..."
+          gh workflow run keep-alive.yml \
+            --repo "${{ github.repository }}" \
+            --ref "${{ github.ref_name }}"
+          echo "Следующий запуск поставлен в очередь."
