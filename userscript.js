@@ -494,39 +494,12 @@
         Авто-древние алтари
     </label>
     <br><br>
-    <div style="font-size:11px;color:#664444;margin-top:4px;padding:4px 0;border-top:1px solid #3a0000;">
-        ⚔ Клановый колизей (подача заявки) входит в <b>Авто-заявки сражений</b> в очереди автофарма.
-    </div>
-
-    <button id="battles-apply-toggle" style="width:100%;margin-top:8px;background:#1a0000;color:#cc3333;border:1px solid #5c0000;">
-        📋 Авто-заявки сражений: куда подавать ▼
-    </button>
-    <div id="battles-apply-panel" style="display:none;margin-top:8px;font-size:12px;">
-        <label>
-            <input type="checkbox" id="battles-apply-king">
-            Король бессмертных
-        </label>
-        <br><br>
-        <label>
-            <input type="checkbox" id="battles-apply-altars">
-            Древний алтарь
-        </label>
-        <br><br>
-        <label>
-            <input type="checkbox" id="battles-apply-clanfight">
-            Клановый турнир
-        </label>
-        <br><br>
-        <label>
-            <input type="checkbox" id="battles-apply-clancoliseum">
-            Клановый колизей
-        </label>
-        <br><br>
-        <label>
-            <input type="checkbox" id="battles-apply-undying">
-            Долина бессмертных
-        </label>
-    </div>
+    <label>
+        <input type="checkbox" id="auto-clancoliseum">
+        Авто-клановый колизей
+    </label>
+    <br>
+    <div style="font-size:10px;color:#553333;margin-top:6px;">За 1 мин до боя — подаёт заявку. В X:00:05 — входит в бой и сражается до конца.</div>
 </div>
 
 <div id="tab-other" class="tab" style="display:none;">
@@ -2989,99 +2962,262 @@
         return true;
     }
 
+    // ── РАСПИСАНИЕ ВСЕХ БОЁВ (МСК) ───────────────────────────────────────────
+    // Каждый элемент: { settingKey, path, url, applyHref, refreshHref, fightTimes }
+    // fightTimes — точное время начала боя в МСК
+    // За 60 сек до боя: переходим на страницу и жмём "Подать заявку"
+    // В X:00:05 (5 сек после начала): жмём "Обновить" и остаёмся на странице боя
+    const ALL_FIGHT_CONFIG = [
+        {
+            settingKey:   'autoUndying',
+            path:         '/undying/',
+            url:          'https://tiwar.ru/undying/',
+            applyHref:    '/undying/enterGame/',
+            refreshHref:  '/undying/',
+            fightTimes:   [{ h: 10, m: 0 }, { h: 16, m: 0 }, { h: 22, m: 0 }],
+        },
+        {
+            settingKey:   'autoClanfight',
+            path:         '/clanfight/',
+            url:          'https://tiwar.ru/clanfight/',
+            applyHref:    '/clanfight/enterFight/',
+            refreshHref:  '/clanfight/',
+            fightTimes:   [{ h: 11, m: 0 }, { h: 19, m: 0 }],
+        },
+        {
+            settingKey:   'autoKing',
+            path:         '/king/',
+            url:          'https://tiwar.ru/king/',
+            applyHref:    '/king/enterGame/',
+            refreshHref:  '/king/',
+            fightTimes:   [{ h: 12, m: 30 }, { h: 16, m: 30 }, { h: 22, m: 30 }],
+        },
+        {
+            settingKey:   'autoAltars',
+            path:         '/altars/',
+            url:          'https://tiwar.ru/altars/',
+            applyHref:    '/altars/enterFight/',
+            refreshHref:  '/altars/',
+            fightTimes:   [{ h: 14, m: 0 }, { h: 21, m: 0 }],
+        },
+        {
+            settingKey:   'autoClancoliseum',
+            path:         '/clancoliseum/',
+            url:          'https://tiwar.ru/clancoliseum/',
+            applyHref:    '/clancoliseum/enterFight/',
+            refreshHref:  '/clancoliseum/',
+            fightTimes:   [{ h: 10, m: 30 }, { h: 15, m: 0 }],
+        },
+    ];
+
+    // localStorage ключи для battles
+    const BATTLES_APPLY_DONE_KEY = 'fadd_battles_apply_done'; // "path-h-m" → timestamp подачи заявки
+    const BATTLES_REFRESH_DONE_KEY = 'fadd_battles_refresh_done'; // "path-h-m" → timestamp нажатия Обновить
+    const BATTLES_ACTIVE_KEY = 'fadd_battles_active_fight'; // "path-h-m" — идёт бой прямо сейчас
+
+    /**
+     * Возвращает ключ конкретного слота боя, например "undying-10-0"
+     */
+    function fightSlotKey(cfg, t) {
+        return cfg.path.replace(/\//g, '') + '-' + t.h + '-' + t.m;
+    }
+
+    /**
+     * Секунды МСК до конкретного слота. Отрицательное — уже прошёл.
+     */
+    function secToSlot(t) {
+        const now = getMskTotalSeconds();
+        const slotSec = t.h * 3600 + t.m * 60;
+        let diff = slotSec - now;
+        if (diff < -43200) diff += 86400; // если прошло больше полусуток — это следующий день
+        return diff;
+    }
+
+    /**
+     * Новая runBattles:
+     * 1. Ищет ближайший бой (за 60 сек до начала или пропустили <5 мин назад)
+     *    среди включённых типов боёв.
+     * 2. Переходит на страницу, жмёт "Подать заявку" (один раз за слот).
+     * 3. В X:00:05 жмёт "Обновить" (один раз за слот) и передаёт управление бою.
+     * 4. Пока идёт активный бой (есть BATTLES_ACTIVE_KEY) — делегирует бой
+     *    существующим runUndying / runBattleAuto / runClancoliseum.
+     */
     function runBattles(force = false) {
         const url = window.location.href;
         const now = Date.now();
 
-        // Берём только включённые пользователем типы заявок
-        const activePages = BATTLE_PAGES.filter(p => settings[p.settingKey] !== false);
-        if (!activePages.length) {
-            console.log('[battles] все типы заявок отключены в настройках');
+        // ── Проверяем: идёт ли прямо сейчас бой, в который мы уже вошли ────────
+        const activeFightKey = localStorage.getItem(BATTLES_ACTIVE_KEY);
+        if (activeFightKey) {
+            // Определяем какой это бой
+            for (const cfg of ALL_FIGHT_CONFIG) {
+                if (!settings[cfg.settingKey]) continue;
+                for (const t of cfg.fightTimes) {
+                    if (fightSlotKey(cfg, t) !== activeFightKey) continue;
+                    const diff = secToSlot(t);
+                    // Бой идёт от 0 до +600 сек (10 мин после начала)
+                    if (diff > 5 || diff < -600) {
+                        // Время вышло — бой завершён
+                        console.log('[battles] бой завершён:', activeFightKey);
+                        localStorage.removeItem(BATTLES_ACTIVE_KEY);
+                        break;
+                    }
+                    // Делегируем бой соответствующей функции
+                    console.log('[battles] активный бой:', activeFightKey, '— делегируем');
+                    if (cfg.path === '/undying/') return runUndying(true);
+                    if (cfg.path === '/clancoliseum/') return runClancoliseum(true);
+                    return runBattleAuto(
+                        cfg.path.replace(/\//g, ''),
+                        cfg.path,
+                        cfg.url,
+                        cfg.applyHref,
+                        'fadd_' + cfg.path.replace(/\//g, '') + '_nav_last',
+                        'fadd_' + cfg.path.replace(/\//g, '') + '_ref_last',
+                        cfg.fightTimes
+                    );
+                }
+            }
+        }
+
+        // ── Ищем бой, для которого сейчас пора действовать ───────────────────
+        // Приоритет: ближайший по времени из активных (включённых)
+        let bestCfg = null, bestT = null, bestDiff = Infinity;
+
+        for (const cfg of ALL_FIGHT_CONFIG) {
+            if (!settings[cfg.settingKey]) continue;
+            for (const t of cfg.fightTimes) {
+                const diff = secToSlot(t);
+                // Окно действия: за 65 сек до боя или пропустили < 5 мин (300 сек)
+                if (diff > 65 || diff < -300) continue;
+                const absDiff = Math.abs(diff);
+                if (absDiff < bestDiff) {
+                    bestDiff = absDiff;
+                    bestCfg = cfg;
+                    bestT = t;
+                }
+            }
+        }
+
+        if (!bestCfg) {
+            // Нет ни одного боя в ближайшие 65 сек
             return false;
         }
 
-        // Определяем текущий шаг (индекс в activePages)
-        let stepIdx = parseInt(localStorage.getItem(BATTLES_STEP_KEY) || '0', 10);
-        if (isNaN(stepIdx) || stepIdx < 0 || stepIdx >= activePages.length) stepIdx = 0;
+        const slotKey = fightSlotKey(bestCfg, bestT);
+        const diff = secToSlot(bestT); // может быть отрицательным (бой уже начался)
 
-        // Если мы фактически уже находимся на одной из включённых страниц — работаем с ней,
-        // независимо от сохранённого индекса (индекс мог "сбиться" после включения/отключения тумблеров)
-        let curIdx = stepIdx;
-        let page = activePages.find((p, i) => {
-            if (url.includes(p.path)) { curIdx = i; return true; }
-            return false;
-        });
-        if (!page) page = activePages[stepIdx];
+        // ── Фаза 1: ПОДАЧА ЗАЯВКИ (за 65..5 сек до боя) ─────────────────────
+        if (diff > 5) {
+            // Проверяем — не подавали ли уже заявку на этот слот
+            let applyDone = {};
+            try { applyDone = JSON.parse(localStorage.getItem(BATTLES_APPLY_DONE_KEY) || '{}'); } catch(_) {}
+            if (applyDone[slotKey]) {
+                console.log('[battles] заявка на', slotKey, 'уже подана, ждём начала боя');
+                return true; // ждём — выходим чтобы не мешать другим задачам
+            }
 
-        // Если мы не на нужной странице — переходим
-        if (!url.includes(page.path)) {
-            const last = parseInt(localStorage.getItem(BATTLES_LAST_KEY) || '0', 10);
-            if (now - last < 2000) return true;
-            localStorage.setItem(BATTLES_LAST_KEY, now.toString());
-            console.log('[battles] переходим на', page.url);
-            window.location.href = page.url;
-            return true;
-        }
-
-        // Мы на нужной странице — если открыт экран награды, сначала закрываем его
-        // кнопкой "Вернуться к сражению", чтобы дальше можно было подать заявку
-        if (page.path === '/clancoliseum/' || page.path === '/altars/') {
-            const closeRewardLink = Array.from(document.querySelectorAll('.menuList a')).find(a => {
-                const href = a.getAttribute('href') || '';
-                return href.includes(page.path) && href.includes('close=reward');
-            });
-
-            if (closeRewardLink) {
-                const lastClose = parseInt(localStorage.getItem(BATTLES_LAST_KEY) || '0', 10);
-                if (now - lastClose < 1500) return true;
+            // Если не на нужной странице — переходим
+            if (!url.includes(bestCfg.path)) {
+                const last = parseInt(localStorage.getItem(BATTLES_LAST_KEY) || '0', 10);
+                if (now - last < 2000) return true;
                 localStorage.setItem(BATTLES_LAST_KEY, now.toString());
-                console.log('[battles] закрываем награду, возвращаемся к сражению на', page.path);
-                forceClick(closeRewardLink);
+                console.log('[battles] переходим на', bestCfg.url, '(до боя:', diff, 'сек)');
+                window.location.href = bestCfg.url;
                 return true;
             }
-        }
 
-        // Ищем кнопку заявки
-        const applyBtn = Array.from(document.querySelectorAll('a.btn')).find(el => {
-            const href = el.getAttribute('href') || '';
-            const text = el.textContent || '';
-            const hrefMatch = page.hrefPart && href.includes(page.hrefPart);
-            const textMatch = page.btnText && text.includes(page.btnText);
-            return hrefMatch || textMatch;
-        });
-
-        if (applyBtn) {
-            const last = parseInt(localStorage.getItem(BATTLES_LAST_KEY) || '0', 10);
-            if (now - last < 1500) return true;
-            localStorage.setItem(BATTLES_LAST_KEY, now.toString());
-            console.log('[battles] подаём заявку на', page.path);
-            forceClick(applyBtn);
-            // Переходим к следующей странице
-            const nextIdx = (curIdx + 1) % activePages.length;
-            localStorage.setItem(BATTLES_STEP_KEY, nextIdx.toString());
-            // Если прошли все страницы — задача завершена (вернём false чтобы перейти к следующему шагу очереди)
-            if (nextIdx === 0) {
-                console.log('[battles] все заявки поданы, цикл завершён');
-                return false;
+            // Мы на странице — ищем кнопку "Подать заявку"
+            const applyBtn = Array.from(document.querySelectorAll('a.btn')).find(el =>
+                (el.getAttribute('href') || '').includes(bestCfg.applyHref)
+            );
+            if (applyBtn) {
+                const last = parseInt(localStorage.getItem(BATTLES_LAST_KEY) || '0', 10);
+                if (now - last < 1500) return true;
+                localStorage.setItem(BATTLES_LAST_KEY, now.toString());
+                console.log('[battles] подаём заявку на', slotKey, '(до боя:', diff, 'сек)');
+                forceClick(applyBtn);
+                // Помечаем что заявка подана для этого слота
+                applyDone[slotKey] = now;
+                // Чистим старые записи (оставляем только за последние сутки)
+                const cutoff = now - 86400000;
+                Object.keys(applyDone).forEach(k => { if (applyDone[k] < cutoff) delete applyDone[k]; });
+                localStorage.setItem(BATTLES_APPLY_DONE_KEY, JSON.stringify(applyDone));
+                return true;
             }
-            // Если клик по заявке не был обычной ссылкой (AJAX) и страница не перешла сама —
-            // подстраховываемся и переходим на следующую страницу принудительно
-            const nextPage = activePages[nextIdx];
-            setTimeout(() => {
-                if (window.location.href.includes(page.path)) {
-                    console.log('[battles] страница не сменилась после заявки, переходим на', nextPage.url);
-                    window.location.href = nextPage.url;
-                }
-            }, 800);
+
+            // Кнопки нет — возможно уже подана через сайт, тоже помечаем
+            console.log('[battles] кнопка заявки не найдена на', bestCfg.path, '— считаем поданной');
+            applyDone[slotKey] = now;
+            localStorage.setItem(BATTLES_APPLY_DONE_KEY, JSON.stringify(applyDone));
             return true;
         }
 
-        // Кнопки нет (заявка уже подана или недоступна) — переходим к следующей
-        const nextIdx = (curIdx + 1) % activePages.length;
-        localStorage.setItem(BATTLES_STEP_KEY, nextIdx.toString());
+        // ── Фаза 2: БОЙ НАЧАЛСЯ (diff <= 5, то есть X:00:05 или позже) ───────
+        // Проверяем — нажимали ли уже "Обновить" для этого слота
+        let refreshDone = {};
+        try { refreshDone = JSON.parse(localStorage.getItem(BATTLES_REFRESH_DONE_KEY) || '{}'); } catch(_) {}
 
-        if (nextIdx === 0) {
-            console.log('[battles] кнопка заявки не найдена на', page.path, '— все страницы обойдены, цикл завершён');
+        if (!refreshDone[slotKey]) {
+            // Нужно нажать "Обновить" один раз
+            if (!url.includes(bestCfg.path)) {
+                const last = parseInt(localStorage.getItem(BATTLES_LAST_KEY) || '0', 10);
+                if (now - last < 2000) return true;
+                localStorage.setItem(BATTLES_LAST_KEY, now.toString());
+                console.log('[battles] бой начался, переходим на', bestCfg.url);
+                window.location.href = bestCfg.url;
+                return true;
+            }
+
+            // Ищем кнопку "Обновить"
+            const refreshBtn = Array.from(document.querySelectorAll('a.btn')).find(el => {
+                const href = el.getAttribute('href') || '';
+                const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+                return href.includes(bestCfg.refreshHref) && txt === 'Обновить';
+            });
+
+            if (refreshBtn) {
+                const last = parseInt(localStorage.getItem(BATTLES_LAST_KEY) || '0', 10);
+                if (now - last < 1500) return true;
+                localStorage.setItem(BATTLES_LAST_KEY, now.toString());
+                console.log('[battles] нажимаем Обновить для', slotKey);
+                forceClick(refreshBtn);
+                refreshDone[slotKey] = now;
+                const cutoff = now - 86400000;
+                Object.keys(refreshDone).forEach(k => { if (refreshDone[k] < cutoff) delete refreshDone[k]; });
+                localStorage.setItem(BATTLES_REFRESH_DONE_KEY, JSON.stringify(refreshDone));
+                // Помечаем этот бой как активный
+                localStorage.setItem(BATTLES_ACTIVE_KEY, slotKey);
+                return true;
+            }
+
+            // Кнопки "Обновить" нет — бой уже загружен, просто помечаем как активный
+            console.log('[battles] кнопка Обновить не найдена, помечаем бой активным:', slotKey);
+            refreshDone[slotKey] = now;
+            localStorage.setItem(BATTLES_REFRESH_DONE_KEY, JSON.stringify(refreshDone));
+            localStorage.setItem(BATTLES_ACTIVE_KEY, slotKey);
+        }
+
+        // "Обновить" уже нажали — делегируем логику боя
+        localStorage.setItem(BATTLES_ACTIVE_KEY, slotKey);
+        if (bestCfg.path === '/undying/') return runUndying(true);
+        if (bestCfg.path === '/clancoliseum/') return runClancoliseum(true);
+        return runBattleAuto(
+            bestCfg.path.replace(/\//g, ''),
+            bestCfg.path,
+            bestCfg.url,
+            bestCfg.applyHref,
+            'fadd_' + bestCfg.path.replace(/\//g, '') + '_nav_last',
+            'fadd_' + bestCfg.path.replace(/\//g, '') + '_ref_last',
+            bestCfg.fightTimes
+        );
+    }
+
+    // Оставляем заглушку чтобы старые вызовы не ломались
+    function _runBattlesLegacy(force = false) {
+        const url = window.location.href;
+        const now = Date.now();
+        // (старая логика удалена, используется runBattles выше)
+        if (false) {
             return false; // все страницы обошли
         }
 
