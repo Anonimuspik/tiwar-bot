@@ -843,15 +843,17 @@
 
     const MINE_SLOTS_DEFAULT = [
         { type: 'tnt',    clicks: 1, label: 'Динамит 1кл'  },
+        { type: 'tnt',    clicks: 2, label: 'Динамит 2кл'  },
         { type: 'drill',  clicks: 1, label: 'Бур 1кл'       },
+        { type: 'drill',  clicks: 2, label: 'Бур 2кл'       },
+        { type: 'gold',   clicks: 1, label: 'Золото 1кл'    },
+        { type: 'gold',   clicks: 2, label: 'Золото 2кл'    },
         { type: 'ticket', clicks: 1, label: 'Билет 1кл'     },
         { type: 'ticket', clicks: 2, label: 'Билет 2кл'     },
         { type: 'bore',   clicks: 1, label: '150 меди 1кл'  },
         { type: 'ore',    clicks: 1, label: '50 меди 1кл'   },
         { type: 'bore',   clicks: 2, label: '150 меди 2кл'  },
         { type: 'ore',    clicks: 2, label: '50 меди 2кл'   },
-        { type: 'gold',   clicks: 1, label: 'Золото 1кл'    },
-        { type: 'gold',   clicks: 2, label: 'Золото 2кл'    },
         { type: 'dirt',   clicks: 1, label: 'Земля 1кл'     },
         { type: 'stone',  clicks: 2, label: 'Камень 2кл'    },
     ];
@@ -2367,40 +2369,8 @@
         }
 
         if (url.includes('/inv/chest')) {
-            const now = Date.now();
-
-            // ── Сначала проверяем "Забрать награду" — после использования эликсира
-            //    страница перезагружается и сразу показывает кнопку награды
-            const rewardBtn = findQuestRewardButton();
-            if (rewardBtn) {
-                const last = parseInt(localStorage.getItem('fadd_sage_reward_last') || '0', 10);
-                if (now - last >= 1500) {
-                    localStorage.setItem('fadd_sage_reward_last', now.toString());
-                    console.log('[sage/chest] забираем награду');
-                    forceClick(rewardBtn);
-                }
-                return true;
-            }
-
-            // ── Ищем первую попавшуюся кнопку "Использовать" с href /inv/chest/use/
-            const useBtn = Array.from(document.querySelectorAll('a.btn, a')).find(a => {
-                const href = a.getAttribute('href') || '';
-                const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
-                return text.includes('Использовать') && href.includes('/inv/chest/use/');
-            });
-
-            if (useBtn) {
-                const last = parseInt(localStorage.getItem('fadd_sage_elixir_last') || '0', 10);
-                if (now - last >= 1500) {
-                    localStorage.setItem('fadd_sage_elixir_last', now.toString());
-                    console.log('[sage/chest] используем эликсир:', useBtn.getAttribute('href'));
-                    forceClick(useBtn);
-                }
-                return true;
-            }
-
-            // ── Ни кнопки "Использовать", ни "Забрать награду" — возвращаемся на квесты
-            console.log('[sage/chest] ни эликсира, ни награды — возвращаемся на /quest/');
+            // Квест с эликсиром отключён — возвращаемся на квесты
+            console.log('[sage/chest] квест с эликсиром пропускаем, возвращаемся на /quest/');
             window.location.href = 'https://tiwar.ru/quest/';
             return true;
         }
@@ -2438,7 +2408,7 @@
         const questActions = [
             { title: 'Поход', href: '/campaign/', cooldownTask: 'campaign' },
             { title: 'Турнир', href: '/career/', cooldownTask: 'career' },
-            { title: 'Алхимия', href: '/inv/chest/', cooldownTask: null },
+
             { title: 'Лаборатория', href: '/effshop/', cooldownTask: null },
             { title: 'Арена', href: '/arena/', cooldownTask: null }
         ];
