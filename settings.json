@@ -17,7 +17,7 @@
   "autoKing": false,
   "autoAltars": false,
   "autoClancoliseum": false,
-  "autoSequentialFarm": false,
+  "autoSequentialFarm": true,
   "sequentialOrder": [
     "arena",
     "mine",
