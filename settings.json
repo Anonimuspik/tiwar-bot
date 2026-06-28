@@ -1,0 +1,28 @@
+{
+  "autoCampaign": false,
+  "autoCareer": false,
+  "autoCave": false,
+  "autoSilver": false,
+  "autoLeague": false,
+  "autoColiseum": false,
+  "autoHunt1": false,
+  "autoForge": false,
+  "autoMine": false,
+  "autoClanDungeon": false,
+  "autoClanGreet": false,
+  "autoClanRecruit": false,
+  "autoClanQuest": false,
+  "autoUndying": false,
+  "autoClanfight": false,
+  "autoKing": false,
+  "autoAltars": false,
+  "autoClancoliseum": false,
+  "autoSequentialFarm": false,
+  "sequentialOrder": [
+    "arena", "mine", "forge", "hunt", "cave",
+    "clandungeon", "campaign", "career", "sage",
+    "battles", "league", "coliseum", "treasury",
+    "undying", "clanquest", "clanrecruit", "clangreet"
+  ],
+  "frozenTasks": ["hunt", "league", "coliseum", "clanquest"]
+}
