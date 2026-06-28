@@ -1,17 +1,4 @@
 {
-  "autoCampaign": false,
-  "autoCareer": false,
-  "autoCave": false,
-  "autoSilver": false,
-  "autoLeague": false,
-  "autoColiseum": false,
-  "autoHunt1": false,
-  "autoForge": false,
-  "autoMine": false,
-  "autoClanDungeon": false,
-  "autoClanGreet": false,
-  "autoClanRecruit": false,
-  "autoClanQuest": false,
   "autoUndying": false,
   "autoClanfight": false,
   "autoKing": false,
@@ -38,17 +25,12 @@
     "clangreet"
   ],
   "frozenTasks": [
-    "mine",
-    "forge",
     "hunt",
-    "campaign",
-    "career",
     "sage",
     "league",
     "coliseum",
     "undying",
     "clanquest",
-    "clanrecruit",
     "clangreet"
   ]
 }
