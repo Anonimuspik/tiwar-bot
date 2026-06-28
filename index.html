@@ -35,7 +35,6 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .toggle input:checked + .toggle-slider { background: #6c63ff; }
 .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
 
-/* QUEUE */
 #queue-list { list-style: none; margin-top: 8px; }
 #queue-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; margin-bottom: 4px; background: #2a2a42; cursor: grab; user-select: none; transition: background 0.15s, opacity 0.15s; border: 1px solid transparent; }
 #queue-list li:active { cursor: grabbing; }
@@ -82,31 +81,7 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-title">Основные</div>
-        <div class="toggle-row"><span class="toggle-label">Авто-поход</span><label class="toggle"><input type="checkbox" data-key="autoCampaign"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Карьера</span><label class="toggle"><input type="checkbox" data-key="autoCareer"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Авто-пещера</span><label class="toggle"><input type="checkbox" data-key="autoCave"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Обмен серебра на золото</span><label class="toggle"><input type="checkbox" data-key="autoSilver"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Лига претендентов</span><label class="toggle"><input type="checkbox" data-key="autoLeague"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Бои за золото (колизей)</span><label class="toggle"><input type="checkbox" data-key="autoColiseum"><span class="toggle-slider"></span></label></div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Далёкие берега</div>
-        <div class="toggle-row"><span class="toggle-label">Авто-охота</span><label class="toggle"><input type="checkbox" data-key="autoHunt1"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Авто-кузница</span><label class="toggle"><input type="checkbox" data-key="autoForge"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Авто-шахта</span><label class="toggle"><input type="checkbox" data-key="autoMine"><span class="toggle-slider"></span></label></div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Клан</div>
-        <div class="toggle-row"><span class="toggle-label">Авто-подземелье</span><label class="toggle"><input type="checkbox" data-key="autoClanDungeon"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Авто-приветствие новичков</span><label class="toggle"><input type="checkbox" data-key="autoClanGreet"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Авто-рекрутинг</span><label class="toggle"><input type="checkbox" data-key="autoClanRecruit"><span class="toggle-slider"></span></label></div>
-        <div class="toggle-row"><span class="toggle-label">Авто-задание клана</span><label class="toggle"><input type="checkbox" data-key="autoClanQuest"><span class="toggle-slider"></span></label></div>
-    </div>
-
+    <!-- Сражения -->
     <div class="card">
         <div class="card-title">Сражения</div>
         <div class="toggle-row"><span class="toggle-label">Долина бессмертных</span><label class="toggle"><input type="checkbox" data-key="autoUndying"><span class="toggle-slider"></span></label></div>
@@ -116,6 +91,7 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
         <div class="toggle-row"><span class="toggle-label">Клановый колизей</span><label class="toggle"><input type="checkbox" data-key="autoClancoliseum"><span class="toggle-slider"></span></label></div>
     </div>
 
+    <!-- Автофарм -->
     <div class="card">
         <div class="card-title">Поочередный автофарм</div>
         <div class="toggle-row" style="margin-bottom:16px;">
@@ -123,7 +99,7 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
             <label class="toggle"><input type="checkbox" data-key="autoSequentialFarm"><span class="toggle-slider"></span></label>
         </div>
         <div style="font-size:11px;color:#5a5a7a;margin-bottom:10px;">
-            Перетащите задачи чтобы изменить порядок. Тоггл справа — включить/выключить задачу.
+            Перетащите задачи чтобы изменить порядок. Синий = выполнять, серый = пропускать.
         </div>
         <ul id="queue-list"></ul>
     </div>
@@ -153,8 +129,7 @@ const TASK_LABELS = {
 const DEFAULT_ORDER = ['arena','mine','forge','hunt','cave','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet'];
 
 let currentSettings = {}, repoFullName = '', ghToken = '';
-let statusTimer = null;
-let dragSrc = null;
+let statusTimer = null, dragSrc = null;
 
 function show(id) { document.getElementById(id).style.display = 'block'; }
 function hide(id) { document.getElementById(id).style.display = 'none'; }
@@ -194,24 +169,18 @@ function doLogin() {
         localStorage.setItem(TOKEN_KEY, btoa(token.trim()));
         enterApp(repo.trim(), token.trim());
     } else {
-        if (btoa(pw) !== stored) {
-            document.getElementById('auth-error').style.display = 'block';
-            return;
-        }
+        if (btoa(pw) !== stored) { document.getElementById('auth-error').style.display = 'block'; return; }
         document.getElementById('auth-error').style.display = 'none';
         enterApp(localStorage.getItem(REPO_KEY), atob(localStorage.getItem(TOKEN_KEY)));
     }
 }
 
 document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
 function doLogout() { hide('main-screen'); show('auth-screen'); }
 
 function enterApp(repo, token) {
-    repoFullName = repo;
-    ghToken = token;
-    hide('auth-screen');
-    show('main-screen');
+    repoFullName = repo; ghToken = token;
+    hide('auth-screen'); show('main-screen');
     document.getElementById('repo-display').textContent = repo;
     loadFromRepo();
 }
@@ -220,7 +189,7 @@ async function ghGet(path) {
     const r = await fetch('https://api.github.com/repos/' + repoFullName + '/contents/' + path, {
         headers: { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github+json' }
     });
-    if (!r.ok) throw new Error('GET ' + path + ': ' + r.status + ' ' + r.statusText);
+    if (!r.ok) throw new Error('GET ' + r.status + ' ' + r.statusText);
     return r.json();
 }
 
@@ -237,17 +206,15 @@ async function ghPut(path, content, sha, message) {
 }
 
 async function loadFromRepo() {
-    showStatus('⏳ Загружаю settings.json…', '');
+    showStatus('⏳ Загружаю…', '');
     try {
         const data = await ghGet('settings.json');
         const raw  = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ''))));
         currentSettings = JSON.parse(raw);
         currentSettings._sha = data.sha;
         applyToUI(currentSettings);
-        showStatus('✓ Настройки загружены', 'ok');
-    } catch(e) {
-        showStatus('❌ Ошибка: ' + e.message, 'err');
-    }
+        showStatus('✓ Загружено', 'ok');
+    } catch(e) { showStatus('❌ ' + e.message, 'err'); }
 }
 
 async function saveToRepo() {
@@ -255,13 +222,10 @@ async function saveToRepo() {
     showStatus('⏳ Сохраняю…', '');
     try {
         const s = collectFromUI();
-        const json = JSON.stringify(s, null, 2);
-        const result = await ghPut('settings.json', json, currentSettings._sha, 'bot: обновление настроек');
+        const result = await ghPut('settings.json', JSON.stringify(s, null, 2), currentSettings._sha, 'bot: обновление настроек');
         currentSettings = { ...s, _sha: result.content.sha };
         showStatus('✓ Сохранено!', 'ok');
-    } catch(e) {
-        showStatus('❌ Ошибка: ' + e.message, 'err');
-    }
+    } catch(e) { showStatus('❌ ' + e.message, 'err'); }
     document.getElementById('save-btn').disabled = false;
 }
 
@@ -270,10 +234,8 @@ function collectFromUI() {
     document.querySelectorAll('[data-key]').forEach(el => { s[el.dataset.key] = el.checked; });
     const order = [], frozen = [];
     document.querySelectorAll('#queue-list li').forEach(li => {
-        const task = li.dataset.task;
-        order.push(task);
-        // тоггл ВЫКЛ = заморожена
-        if (!li.querySelector('.task-toggle').checked) frozen.push(task);
+        order.push(li.dataset.task);
+        if (!li.querySelector('.task-toggle').checked) frozen.push(li.dataset.task);
     });
     s.sequentialOrder = order;
     s.frozenTasks = frozen;
@@ -286,7 +248,7 @@ function applyToUI(s) {
     });
     renderQueue(
         Array.isArray(s.sequentialOrder) ? s.sequentialOrder : DEFAULT_ORDER,
-        Array.isArray(s.frozenTasks)     ? s.frozenTasks     : []
+        Array.isArray(s.frozenTasks) ? s.frozenTasks : []
     );
 }
 
@@ -298,26 +260,19 @@ function renderQueue(order, frozenArr) {
     DEFAULT_ORDER.forEach(t => { if (!full.includes(t)) full.push(t); });
 
     full.forEach(task => {
-        const isActive = !frozenSet.has(task); // тоггл ВКЛ если НЕ заморожена
+        const isActive = !frozenSet.has(task);
         const li = document.createElement('li');
         li.dataset.task = task;
         if (!isActive) li.classList.add('frozen');
         li.draggable = true;
-
-        // Создаём тоггл для задачи
-        const toggleId = 'tq-' + task;
         li.innerHTML =
             '<span class="drag-handle">⠿</span>' +
             '<span class="task-name">' + (TASK_LABELS[task] || task) + '</span>' +
-            '<label class="toggle" style="margin-left:8px;">' +
-                '<input type="checkbox" class="task-toggle" id="' + toggleId + '"' + (isActive ? ' checked' : '') + '>' +
-                '<span class="toggle-slider"></span>' +
-            '</label>';
+            '<label class="toggle"><input type="checkbox" class="task-toggle"' + (isActive ? ' checked' : '') + '><span class="toggle-slider"></span></label>';
 
         li.querySelector('.task-toggle').addEventListener('change', function() {
             li.classList.toggle('frozen', !this.checked);
         });
-
         li.addEventListener('dragstart', function(e) { dragSrc = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
         li.addEventListener('dragover',  function(e) { e.preventDefault(); this.classList.add('drag-over'); });
         li.addEventListener('dragleave', function()  { this.classList.remove('drag-over'); });
@@ -332,7 +287,6 @@ function renderQueue(order, frozenArr) {
             this.classList.remove('dragging');
             list.querySelectorAll('li').forEach(l => l.classList.remove('drag-over'));
         });
-
         list.appendChild(li);
     });
 }
