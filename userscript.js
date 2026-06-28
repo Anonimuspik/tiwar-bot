@@ -282,528 +282,736 @@
         const savedPos  = JSON.parse(localStorage.getItem('fadd_menu_position') || '{}');
         const savedSize = JSON.parse(localStorage.getItem('fadd_menu_size') || '{}');
 
-        function clamp(val, min, max) {
-            return Math.max(min, Math.min(max, val));
-        }
+        function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 
         let left = parseInt(savedPos.left || 20, 10);
         let top  = parseInt(savedPos.top  || 20, 10);
 
-        menu.style.position = 'fixed';
-        menu.style.background = 'linear-gradient(160deg,#0d0000 0%,#1a0000 60%,#0d0000 100%)';
-        menu.style.color = '#ff3333';
-        menu.style.border = '2px solid #8b0000';
-        menu.style.borderRadius = '6px';
-        menu.style.zIndex = '99999';
-        menu.style.fontFamily = "'Palatino Linotype','Book Antiqua',Palatino,serif";
-        menu.style.padding = '10px';
-        menu.style.boxShadow = '0 0 28px #cc000099,0 0 6px #ff000044,inset 0 0 40px #1a000022';
-        menu.style.overflow = 'hidden';
-        menu.style.minWidth = '220px';
-        menu.style.minHeight = '100px';
-        if (savedSize.width)  menu.style.width  = savedSize.width;
-        if (savedSize.height) menu.style.height = savedSize.height;
+        Object.assign(menu.style, {
+            position: 'fixed',
+            zIndex: '99999',
+            width: savedSize.width || '600px',
+            minWidth: '320px',
+            minHeight: '200px',
+            height: savedSize.height || 'auto',
+            fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.55)',
+            background: '#1e1e2e',
+        });
 
         menu.innerHTML = `
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
+#fadd-menu * { box-sizing: border-box; }
 
-#fadd-menu, #fadd-menu * {
-    font-family: 'Cinzel', 'Palatino Linotype', Palatino, serif !important;
-    box-sizing: border-box;
+/* ── ШАПКА ── */
+#fadd-header {
+    background: linear-gradient(135deg, #4a4aad 0%, #6c63ff 100%);
+    padding: 14px 16px 0;
+    cursor: move;
+    user-select: none;
 }
-#fadd-menu label, #fadd-menu div, #fadd-menu span {
-    color: #cc3333;
+#fadd-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
 }
-#fadd-menu a { color: #ff4444; text-decoration:none; }
-#fadd-menu a:hover { color:#ff7777; text-shadow:0 0 6px #ff0000; }
-
-/* Неоновые переключатели вместо чекбоксов */
-#fadd-menu input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 34px;
-    height: 18px;
-    background: #1a0000;
-    border: 1px solid #5c0000;
-    border-radius: 10px;
-    position: relative;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background 0.25s, box-shadow 0.25s;
-    vertical-align: middle;
+#fadd-title {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
-#fadd-menu input[type="checkbox"]::after {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background: #5c0000;
-    border-radius: 50%;
-    top: 2px;
-    left: 2px;
-    transition: left 0.25s, background 0.25s, box-shadow 0.25s;
-}
-#fadd-menu input[type="checkbox"]:checked {
-    background: #3a0000;
-    border-color: #ff2222;
-    box-shadow: 0 0 8px #ff000099, 0 0 3px #ff000066 inset;
-}
-#fadd-menu input[type="checkbox"]:checked::after {
-    left: 18px;
-    background: #ff2222;
-    box-shadow: 0 0 6px #ff0000, 0 0 12px #ff000088;
-}
-#fadd-menu label {
+#fadd-clock-wrap {
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: pointer;
-    color: #cc3333;
+}
+#fadd-clock {
+    color: rgba(255,255,255,0.85);
     font-size: 12px;
-    margin-bottom: 4px;
+    font-weight: 600;
+    background: rgba(0,0,0,0.25);
+    border-radius: 6px;
+    padding: 2px 8px;
 }
-
-/* Кнопки */
-#fadd-menu button {
-    background: linear-gradient(135deg,#1a0000,#2d0000);
-    color: #cc3333;
-    border: 1px solid #5c0000;
-    border-radius: 4px;
+#fadd-close-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
     cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+#fadd-close-btn:hover { background: rgba(255,255,255,0.3); }
+
+/* ── ВКЛАДКИ ── */
+#fadd-tabs {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+#fadd-tabs::-webkit-scrollbar { display: none; }
+.fadd-tab-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.65);
     font-size: 11px;
-    padding: 3px 6px;
-    transition: all 0.15s;
-    font-family: 'Cinzel', serif !important;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
 }
-#fadd-menu button:hover {
-    background: linear-gradient(135deg,#3a0000,#5c0000);
-    color: #ff5555;
-    box-shadow: 0 0 8px #ff000066;
-    border-color: #ff2222;
+.fadd-tab-btn:hover { color: #fff; }
+.fadd-tab-btn.active {
+    color: #fff;
+    border-bottom-color: #fff;
 }
 
-/* Скроллбар */
-#fadd-menu ::-webkit-scrollbar { width:4px; }
-#fadd-menu ::-webkit-scrollbar-track { background:#0d0000; }
-#fadd-menu ::-webkit-scrollbar-thumb { background:#5c0000; border-radius:2px; }
+/* ── ТЕЛО ── */
+#fadd-body {
+    background: #1e1e2e;
+    overflow-y: auto;
+    max-height: 480px;
+    padding: 0;
+}
+#fadd-body::-webkit-scrollbar { width: 4px; }
+#fadd-body::-webkit-scrollbar-track { background: #1e1e2e; }
+#fadd-body::-webkit-scrollbar-thumb { background: #44446a; border-radius: 2px; }
+
+/* ── ВКЛАДКА-ПАНЕЛЬ ── */
+.fadd-panel { display: none; padding: 16px; }
+.fadd-panel.active { display: block; }
+
+/* ── ТОГГЛ ── */
+.fadd-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid #2a2a3e;
+}
+.fadd-row:last-of-type { border-bottom: none; }
+.fadd-row-label {
+    color: #c8c8e8;
+    font-size: 13px;
+    flex: 1;
+}
+.fadd-row-extra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.fadd-toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+}
+.fadd-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+.fadd-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #3a3a5c;
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.fadd-toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.fadd-toggle input:checked + .fadd-toggle-slider { background: #6c63ff; }
+.fadd-toggle input:checked + .fadd-toggle-slider::before { transform: translateX(18px); }
+
+/* мини-лейбл рядом с тогглом */
+.fadd-mini-label {
+    color: #8888aa;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+/* ── СЕКЦИЯ-ЗАГОЛОВОК ── */
+.fadd-section-title {
+    color: #8888bb;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin: 14px 0 6px;
+}
+.fadd-section-title:first-child { margin-top: 0; }
+
+/* ── КНОПКИ СОХРАНИТЬ/ОТМЕНИТЬ ── */
+.fadd-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #1e1e2e;
+    border-top: 1px solid #2a2a3e;
+}
+.fadd-btn-cancel {
+    background: none;
+    border: none;
+    color: #8888bb;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    transition: color 0.15s;
+}
+.fadd-btn-cancel:hover { color: #bbbbd8; }
+.fadd-btn-save {
+    background: #6c63ff;
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 7px 22px;
+    border-radius: 8px;
+    letter-spacing: 0.5px;
+    transition: background 0.15s;
+}
+.fadd-btn-save:hover { background: #7c74ff; }
+
+/* ── RESIZE ── */
+#fadd-resize {
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 18px; height: 18px;
+    cursor: se-resize;
+    z-index: 100000;
+    opacity: 0.4;
+}
+#fadd-resize:hover { opacity: 0.8; }
+
+/* ── ДОП. КНОПКИ В ТЕЛЕ ── */
+.fadd-body-btn {
+    width: 100%;
+    background: #2a2a42;
+    border: 1px solid #3a3a5c;
+    color: #c8c8e8;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    margin-top: 8px;
+    transition: background 0.15s;
+}
+.fadd-body-btn:hover { background: #34345a; }
+
+/* ── ШАХТА ── */
+#mine-panel { display: none; margin-top: 8px; }
+
+/* ── РАСПИСАНИЕ ── */
+.sched-item { color: #a0a0c8; font-size: 12px; margin: 3px 0; }
+
+/* ── ОПИСАНИЕ ── */
+.fadd-desc { color: #5a5a7a; font-size: 11px; margin: 4px 0 8px; line-height: 1.4; }
+
+/* ── SELECT / INPUT ── */
+#fadd-menu select, #fadd-menu input[type="number"], #fadd-menu input[type="range"] {
+    background: #2a2a42;
+    color: #c8c8e8;
+    border: 1px solid #3a3a5c;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    outline: none;
+}
+#fadd-menu select:focus, #fadd-menu input[type="number"]:focus { border-color: #6c63ff; }
+
+/* ── МУЗЫКА ── */
+#music-playlist a { color: #8888bb; font-size: 11px; text-decoration: none; display: block; padding: 2px 0; }
+#music-playlist a.active { color: #6c63ff; }
+#music-progress-wrap { cursor: pointer; }
+
+/* ── СТАТУС СКАНИРОВАНИЯ ── */
+#timer-scan-status { font-size: 11px; color: #6c63ff; margin-top: 6px; display: none; }
+
+/* ── ОЧЕРЕДЬ ── */
+#sequential-order-panel { display: none; margin-top: 8px; }
 </style>
-<div id="fadd-drag" style="cursor:move;background:linear-gradient(90deg,#1a0000,#2d0000,#1a0000);padding:6px 5px;margin-bottom:8px;text-align:center;color:#ff3333;border-bottom:1px solid #5c0000;border-radius:4px;letter-spacing:2px;font-weight:bold;text-shadow:0 0 8px #ff000099;">
-    💀 Made By RcKaneki (RcCode) 💀
-    <div id="fadd-clock" style="font-size:13px;color:#ff6666;margin-top:2px;letter-spacing:1px;text-shadow:0 0 6px #ff000077;">--:--:--</div>
-</div>
-<div id="fadd-resize" style="position:absolute;bottom:0;right:0;width:16px;height:16px;cursor:se-resize;z-index:100000;">
-    <svg viewBox="0 0 16 16" width="16" height="16" style="display:block;opacity:0.6;">
-        <line x1="4" y1="16" x2="16" y2="4" stroke="#ff2222" stroke-width="1.5"/>
-        <line x1="8" y1="16" x2="16" y2="8" stroke="#ff2222" stroke-width="1.5"/>
-        <line x1="12" y1="16" x2="16" y2="12" stroke="#ff2222" stroke-width="1.5"/>
-    </svg>
-</div>
-<div id="fadd-content" style="overflow-y:auto;max-height:calc(100% - 70px);padding-right:2px;">
 
-<div id="tab-buttons" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
-    <button data-tab="main">Главное</button>
-    <button data-tab="distshores">Далекие берега</button>
-    <button data-tab="clan">Мой клан</button>
-    <button data-tab="battles">Авто сражения</button>
-    <button data-tab="other">Автофарм</button>
-    <button data-tab="adventure">🗺 Приключение</button>
-    <button data-tab="utility">🔧 Другое</button>
-    <button data-tab="music">🎵 Музыка</button>
-</div>
-
-<div id="tab-main" class="tab">
-    <label>
-        <input type="checkbox" id="auto-campaign">
-        Авто-поход
-    </label>
-
-    <br><br>
-
-    <label>
-        <input type="checkbox" id="auto-career">
-        Карьера
-    </label>
-
-    <br><br>
-
-    <label>
-        <input type="checkbox" id="auto-cave">
-        Авто-пещера
-    </label>
-</div>
-<div id="tab-distshores" class="tab" style="display:none;">
-
-    <label>
-        <input type="checkbox" id="auto-hunt1">
-        Авто-охота
-    </label>
-
-    <br><br>
-
-    <label>
-        <input type="checkbox" id="auto-forge">
-        Авто-кузница
-    </label>
-
-    <br><br>
-
-    <label>
-        <input type="checkbox" id="auto-mine">
-        Авто-шахта
-    </label>
-
-    <br><br>
-
-    <div>
-        <button id="mine-toggle" style="width:100%;background:#1a0000;color:#cc3333;border:1px solid #5c0000;">
-            ⚒ Приоритет шахты ▼
-        </button>
-
-        <div id="mine-panel" style="display:none;margin-top:8px;font-size:12px;"></div>
-    </div>
-</div>
-
-<div id="tab-clan" class="tab" style="display:none;">
-    <label>
-        <input type="checkbox" id="auto-clandungeon">
-        Авто-подземелье
-    </label>
-</div>
-
-<div id="tab-battles" class="tab" style="display:none;">
-    <div style="color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:8px;">Авто сражения</div>
-    <div style="font-size:11px;color:#773333;margin-bottom:10px;">Активные бои выполняются в порядке ближайшего по расписанию.</div>
-    <label>
-        <input type="checkbox" id="auto-undying">
-        Авто-долина бессмертных
-    </label>
-    <br><br>
-    <label>
-        <input type="checkbox" id="auto-clanfight">
-        Авто-клановый турнир
-    </label>
-    <br><br>
-    <label>
-        <input type="checkbox" id="auto-king">
-        Авто-король бессмертных
-    </label>
-    <br><br>
-    <label>
-        <input type="checkbox" id="auto-altars">
-        Авто-древние алтари
-    </label>
-    <br><br>
-    <label>
-        <input type="checkbox" id="auto-clancoliseum">
-        Авто-клановый колизей
-    </label>
-    <br>
-    <div style="font-size:10px;color:#553333;margin-top:6px;">За 1 мин до боя — подаёт заявку. В X:00:05 — входит в бой и сражается до конца.</div>
-</div>
-
-<div id="tab-other" class="tab" style="display:none;">
-    <label title="Запускает включенные режимы по очереди, чтобы они не перебивали друг друга.">
-        <input type="checkbox" id="auto-sequential-farm">
-        Поочередный автофарм
-    </label>
-    <div style="margin-top:6px;font-size:11px;color:#ccc;max-width:210px;">
-        Сам запускает выбранные пункты по порядку и пропускает те, где сейчас нет ходов/ресурсов.
-    </div>
-    <button id="sequential-order-toggle" style="width:100%;margin-top:8px;background:#1a0000;color:#cc3333;border:1px solid #5c0000;">
-        🔃 Очередь автофарма ▼
-    </button>
-    <div id="sequential-order-panel" style="display:none;margin-top:8px;font-size:12px;">
-        <div style="color:#773333;font-size:11px;margin-bottom:4px;">🔒 — заморожена, ▶️ — активна</div>
-    </div>
-
-</div>
-
-<div id="tab-schedule" class="tab" style="display:none;">
-    <div style="color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:8px;">Расписание боёв</div>
-
-    <div style="border:1px solid #3a0000;border-radius:4px;padding:8px;margin-bottom:10px;background:#0d0000;">
-        <label style="margin-bottom:6px;">
-            <input type="checkbox" id="notif-enabled">
-            🔔 Уведомления о боях
-        </label>
-        <div id="notif-permission-warn" style="display:none;font-size:10px;color:#ff6633;margin-top:4px;">⚠ Нажми "Разрешить" в браузере</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
-            <span style="font-size:11px;color:#884444;">За</span>
-            <input type="number" id="notif-minutes" min="1" max="50" value="10"
-                style="width:48px;background:#1a0000;color:#ff4444;border:1px solid #5c0000;border-radius:3px;padding:2px 4px;font-size:12px;text-align:center;">
-            <span style="font-size:11px;color:#884444;">мин до боя</span>
+<!-- ШАПКА -->
+<div id="fadd-header">
+    <div id="fadd-header-top">
+        <div id="fadd-title">💀 RcCode Bot</div>
+        <div id="fadd-clock-wrap">
+            <div id="fadd-clock">--:--:--</div>
+            <button id="fadd-close-btn" title="Свернуть">✕</button>
         </div>
-        <div style="font-size:10px;color:#553333;margin-top:4px;">от 1 до 50 минут</div>
-        <div style="margin-top:8px;">
-            <div style="font-size:11px;color:#884444;margin-bottom:4px;">🔊 Звук уведомления</div>
-            <select id="notif-sound-select" style="width:100%;background:#1a0000;color:#ff4444;border:1px solid #5c0000;border-radius:3px;padding:3px 4px;font-size:11px;cursor:pointer;">
+    </div>
+    <div id="fadd-tabs">
+        <button class="fadd-tab-btn" data-tab="main">Основные</button>
+        <button class="fadd-tab-btn" data-tab="distshores">Далёкие берега</button>
+        <button class="fadd-tab-btn" data-tab="clan">Клан</button>
+        <button class="fadd-tab-btn" data-tab="battles">Сражения</button>
+        <button class="fadd-tab-btn" data-tab="other">Автофарм</button>
+        <button class="fadd-tab-btn" data-tab="adventure">Приключение</button>
+        <button class="fadd-tab-btn" data-tab="utility">Другое</button>
+        <button class="fadd-tab-btn" data-tab="music">Музыка</button>
+    </div>
+</div>
+
+<!-- ТЕЛО -->
+<div id="fadd-body">
+
+    <!-- ── ОСНОВНЫЕ ── -->
+    <div class="fadd-panel" id="fadd-panel-main">
+        <div class="fadd-section-title">Основное</div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-поход</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-campaign"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Карьера</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-career"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-пещера</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-cave"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Обмен серебра на золото</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-silver"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Лига претендентов</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-league"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Бои за золото (колизей)</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-coliseum"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-actions">
+            <button class="fadd-btn-cancel" data-panel="main">ОТМЕНИТЬ</button>
+            <button class="fadd-btn-save" data-panel="main">СОХРАНИТЬ</button>
+        </div>
+    </div>
+
+    <!-- ── ДАЛЁКИЕ БЕРЕГА ── -->
+    <div class="fadd-panel" id="fadd-panel-distshores">
+        <div class="fadd-section-title">Далёкие берега</div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-охота</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-hunt1"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-кузница</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-forge"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-шахта</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-mine"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <button class="fadd-body-btn" id="mine-toggle">⚒ Приоритет шахты ▼</button>
+        <div id="mine-panel"></div>
+        <div class="fadd-actions">
+            <button class="fadd-btn-cancel" data-panel="distshores">ОТМЕНИТЬ</button>
+            <button class="fadd-btn-save" data-panel="distshores">СОХРАНИТЬ</button>
+        </div>
+    </div>
+
+    <!-- ── КЛАН ── -->
+    <div class="fadd-panel" id="fadd-panel-clan">
+        <div class="fadd-section-title">Клан</div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-подземелье</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-clandungeon"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-приветствие новичков</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-clangreet"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-рекрутинг</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-clanrecruit"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Авто-задание клана</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-clanquest"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-actions">
+            <button class="fadd-btn-cancel" data-panel="clan">ОТМЕНИТЬ</button>
+            <button class="fadd-btn-save" data-panel="clan">СОХРАНИТЬ</button>
+        </div>
+    </div>
+
+    <!-- ── СРАЖЕНИЯ ── -->
+    <div class="fadd-panel" id="fadd-panel-battles">
+        <div class="fadd-section-title">Сражения</div>
+        <div class="fadd-desc">За 1 мин до боя подаёт заявку, затем сражается до конца.</div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Долина бессмертных</span>
+            <div class="fadd-row-extra">
+                <label class="fadd-toggle"><input type="checkbox" id="auto-undying"><span class="fadd-toggle-slider"></span></label>
+            </div>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Клановый турнир</span>
+            <div class="fadd-row-extra">
+                <label class="fadd-toggle"><input type="checkbox" id="auto-clanfight"><span class="fadd-toggle-slider"></span></label>
+            </div>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Король бессмертных</span>
+            <div class="fadd-row-extra">
+                <label class="fadd-toggle"><input type="checkbox" id="auto-king"><span class="fadd-toggle-slider"></span></label>
+            </div>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Древние алтари</span>
+            <div class="fadd-row-extra">
+                <label class="fadd-toggle"><input type="checkbox" id="auto-altars"><span class="fadd-toggle-slider"></span></label>
+            </div>
+        </div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Клановый колизей</span>
+            <div class="fadd-row-extra">
+                <label class="fadd-toggle"><input type="checkbox" id="auto-clancoliseum"><span class="fadd-toggle-slider"></span></label>
+            </div>
+        </div>
+        <div class="fadd-section-title" style="margin-top:14px;">Расписание</div>
+        <div id="all-schedule-list" style="font-size:12px;line-height:1.8;color:#8888aa;"></div>
+        <div class="fadd-actions">
+            <button class="fadd-btn-cancel" data-panel="battles">ОТМЕНИТЬ</button>
+            <button class="fadd-btn-save" data-panel="battles">СОХРАНИТЬ</button>
+        </div>
+    </div>
+
+    <!-- ── АВТОФАРМ ── -->
+    <div class="fadd-panel" id="fadd-panel-other">
+        <div class="fadd-section-title">Поочередный автофарм</div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">Включить автофарм</span>
+            <label class="fadd-toggle"><input type="checkbox" id="auto-sequential-farm"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-desc">Сам запускает выбранные пункты по порядку и пропускает те, где нет ходов.</div>
+        <button class="fadd-body-btn" id="sequential-order-toggle">🔃 Очередь автофарма ▼</button>
+        <div id="sequential-order-panel"></div>
+        <div id="timer-scan-status"></div>
+        <div class="fadd-actions">
+            <button class="fadd-btn-cancel" data-panel="other">ОТМЕНИТЬ</button>
+            <button class="fadd-btn-save" data-panel="other">СОХРАНИТЬ</button>
+        </div>
+    </div>
+
+    <!-- ── ПРИКЛЮЧЕНИЕ ── -->
+    <div class="fadd-panel" id="fadd-panel-adventure">
+        <div class="fadd-section-title">🗺 Приключение</div>
+        <div class="fadd-desc">Настройки приключений и уведомлений о боях.</div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">🔔 Уведомления о боях</span>
+            <label class="fadd-toggle"><input type="checkbox" id="notif-enabled"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div id="notif-permission-warn" style="display:none;font-size:11px;color:#ff9944;margin:4px 0;">⚠ Нажми Разрешить в браузере</div>
+        <div class="fadd-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
+            <span class="fadd-row-label">За сколько минут до боя</span>
+            <input type="number" id="notif-minutes" min="1" max="50" value="10" style="width:64px;">
+        </div>
+        <div class="fadd-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
+            <span class="fadd-row-label">🔊 Звук уведомления</span>
+            <select id="notif-sound-select" style="width:100%;">
                 <option value="oshiete">Oshiete Oshiete yo 🎵</option>
                 <option value="beep">Стандартный пип</option>
             </select>
         </div>
-        <button id="notif-test-btn" style="width:100%;margin-top:8px;background:#1a0000;color:#ff6633;border:1px solid #5c0000;padding:5px;font-size:11px;cursor:pointer;">
-            🔔 Проверить уведомление
-        </button>
+        <button class="fadd-body-btn" id="notif-test-btn">🔔 Проверить уведомление</button>
+        <div class="fadd-actions">
+            <button class="fadd-btn-cancel" data-panel="adventure">ОТМЕНИТЬ</button>
+            <button class="fadd-btn-save" data-panel="adventure">СОХРАНИТЬ</button>
+        </div>
     </div>
 
-    <div id="all-schedule-list" style="font-size:12px;line-height:1.8;"></div>
+    <!-- ── ДРУГОЕ ── -->
+    <div class="fadd-panel" id="fadd-panel-utility">
+        <div class="fadd-section-title">🔧 Другое</div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">🖼 Убрать изображения</span>
+            <label class="fadd-toggle"><input type="checkbox" id="utility-hide-images-toggle"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-desc">Скрывает все /images/ кроме /images/icon/</div>
+        <div class="fadd-row">
+            <span class="fadd-row-label">🩸 Новый фон</span>
+            <label class="fadd-toggle"><input type="checkbox" id="utility-bg-toggle"><span class="fadd-toggle-slider"></span></label>
+        </div>
+        <div class="fadd-desc">Красит фон сайта в стиль меню</div>
+        <button class="fadd-body-btn" id="utility-clear-cache">🗑 Очистить кеш</button>
+        <div id="utility-status" style="display:none;font-size:11px;color:#6c63ff;margin-top:6px;"></div>
+        <div class="fadd-actions">
+            <button class="fadd-btn-cancel" data-panel="utility">ОТМЕНИТЬ</button>
+            <button class="fadd-btn-save" data-panel="utility">СОХРАНИТЬ</button>
+        </div>
+    </div>
+
+    <!-- ── МУЗЫКА ── -->
+    <div class="fadd-panel" id="fadd-panel-music">
+        <div class="fadd-section-title">🎵 Фоновая музыка</div>
+        <div id="music-title" style="font-size:13px;color:#c8c8e8;text-align:center;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
+        <div style="position:relative;height:6px;background:#2a2a42;border-radius:3px;margin-bottom:4px;cursor:pointer;" id="music-progress-wrap">
+            <div id="music-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#4a4aad,#6c63ff);border-radius:3px;pointer-events:none;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#5a5a7a;margin-bottom:10px;">
+            <span id="music-time-cur">0:00</span>
+            <span id="music-time-dur">0:00</span>
+        </div>
+        <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:12px;">
+            <button class="fadd-body-btn" id="music-prev" style="width:auto;padding:6px 14px;font-size:16px;text-align:center;">⏮</button>
+            <button class="fadd-body-btn" id="music-play" style="width:auto;padding:6px 18px;font-size:18px;text-align:center;">▶</button>
+            <button class="fadd-body-btn" id="music-next" style="width:auto;padding:6px 14px;font-size:16px;text-align:center;">⏭</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="font-size:12px;color:#8888aa;">🔊</span>
+            <input type="range" id="music-volume" min="0" max="100" value="50" style="flex:1;accent-color:#6c63ff;cursor:pointer;border:none;">
+            <span id="music-volume-val" style="font-size:11px;color:#8888aa;width:32px;text-align:right;">50%</span>
+        </div>
+        <div class="fadd-section-title">Плейлист</div>
+        <div id="music-playlist" style="font-size:12px;line-height:1.9;max-height:140px;overflow-y:auto;color:#8888aa;"></div>
+        <div class="fadd-actions">
+            <button class="fadd-btn-cancel" data-panel="music">ОТМЕНИТЬ</button>
+            <button class="fadd-btn-save" data-panel="music">СОХРАНИТЬ</button>
+        </div>
+    </div>
+
 </div>
 
-<div id="tab-utility" class="tab" style="display:none;">
-    <div style="color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:10px;">🔧 Другое</div>
-
-    <label style="font-size:12px;display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer;">
-        <input type="checkbox" id="utility-hide-images-toggle">
-        🖼 Убрать изображения
-    </label>
-    <div style="font-size:10px;color:#553333;margin-bottom:12px;">Скрывает все /images/ кроме /images/icon/</div>
-
-    <label style="font-size:12px;display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer;">
-        <input type="checkbox" id="utility-bg-toggle">
-        🩸 Новый фон
-    </label>
-    <div style="font-size:10px;color:#553333;margin-bottom:12px;">Красит фон сайта в стиль меню</div>
-
-    <button id="utility-clear-cache" style="width:100%;background:#1a0000;color:#ff8844;border:1px solid #5c0000;padding:6px;font-size:12px;cursor:pointer;">
-        🗑 Очистить кеш
-    </button>
-    <div style="font-size:10px;color:#553333;margin-top:4px;">Перезагрузка страницы без кеша (Ctrl+Shift+R)</div>
-
-    <div id="utility-status" style="margin-top:10px;font-size:11px;color:#ff4444;display:none;"></div>
+<!-- RESIZE -->
+<div id="fadd-resize">
+    <svg viewBox="0 0 16 16" width="16" height="16"><line x1="4" y1="16" x2="16" y2="4" stroke="#6c63ff" stroke-width="1.5"/><line x1="8" y1="16" x2="16" y2="8" stroke="#6c63ff" stroke-width="1.5"/><line x1="12" y1="16" x2="16" y2="12" stroke="#6c63ff" stroke-width="1.5"/></svg>
 </div>
-
-<div id="tab-music" class="tab" style="display:none;">
-    <div style="color:#ff3333;font-size:13px;font-weight:bold;margin-bottom:8px;">🎵 Фоновая музыка</div>
-
-    <!-- Название трека -->
-    <div id="music-title" style="font-size:12px;color:#ff6666;text-align:center;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">—</div>
-
-    <!-- Прогресс-бар -->
-    <div style="position:relative;height:6px;background:#2a0000;border-radius:3px;margin-bottom:4px;cursor:pointer;" id="music-progress-wrap">
-        <div id="music-progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#8b0000,#ff2222);border-radius:3px;pointer-events:none;"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:#553333;margin-bottom:8px;">
-        <span id="music-time-cur">0:00</span>
-        <span id="music-time-dur">0:00</span>
-    </div>
-
-    <!-- Кнопки управления -->
-    <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:10px;">
-        <button id="music-prev" title="Предыдущий" style="font-size:16px;padding:4px 8px;">⏮</button>
-        <button id="music-play" title="Пауза/Играть" style="font-size:18px;padding:4px 10px;">▶</button>
-        <button id="music-next" title="Следующий" style="font-size:16px;padding:4px 8px;">⏭</button>
-    </div>
-
-    <!-- Громкость -->
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-        <span style="font-size:11px;color:#884444;">🔊</span>
-        <input type="range" id="music-volume" min="0" max="100" value="50"
-            style="flex:1;accent-color:#cc3333;cursor:pointer;">
-        <span id="music-volume-val" style="font-size:11px;color:#ff4444;width:28px;text-align:right;">50%</span>
-    </div>
-
-    <!-- Плейлист -->
-    <div style="font-size:11px;color:#773333;margin-bottom:4px;">Плейлист</div>
-    <div id="music-playlist" style="font-size:11px;line-height:1.9;max-height:120px;overflow-y:auto;"></div>
-</div>
-</div>`;
+`;
 
         (document.body || document.documentElement).appendChild(menu);
 
+        // ── Позиция ──────────────────────────────────────────────────────────
         setTimeout(() => {
             const rect = menu.getBoundingClientRect();
-            const maxX = window.innerWidth - rect.width;
-            const maxY = window.innerHeight - rect.height;
-
-            left = clamp(left, 0, maxX);
-            top = clamp(top, 0, maxY);
-
+            left = clamp(left, 0, Math.max(0, window.innerWidth  - rect.width));
+            top  = clamp(top,  0, Math.max(0, window.innerHeight - rect.height));
             menu.style.left = left + 'px';
-            menu.style.top = top + 'px';
+            menu.style.top  = top  + 'px';
         }, 0);
 
-        const tabButtons = menu.querySelectorAll('#tab-buttons button');
+        // ── Вкладки ───────────────────────────────────────────────────────────
+        const savedTab = localStorage.getItem('fadd_active_tab') || 'distshores';
 
         function showTab(tab) {
             localStorage.setItem('fadd_active_tab', tab);
-
-            menu.querySelectorAll('.tab').forEach(el => {
-                el.style.display = 'none';
-            });
-
-            const activeTab = menu.querySelector('#tab-' + tab);
-            if (activeTab) {
-                activeTab.style.display = 'block';
-            }
+            menu.querySelectorAll('.fadd-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            menu.querySelectorAll('.fadd-panel').forEach(p => p.classList.remove('active'));
+            const panel = menu.querySelector('#fadd-panel-' + tab);
+            if (panel) panel.classList.add('active');
         }
 
-        const savedTab = localStorage.getItem('fadd_active_tab') || 'distshores';
+        menu.querySelectorAll('.fadd-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => showTab(btn.dataset.tab));
+        });
         showTab(savedTab);
 
-        tabButtons.forEach(btn => {
+        // ── Закрыть ───────────────────────────────────────────────────────────
+        const closeBtn = menu.querySelector('#fadd-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                menu.style.display = menu.style.display === 'none' ? '' : 'none';
+            });
+        }
+
+        // ── Привязка чекбоксов ────────────────────────────────────────────────
+        const campaign      = menu.querySelector('#auto-campaign');
+        const career        = menu.querySelector('#auto-career');
+        const cave          = menu.querySelector('#auto-cave');
+        const hunt          = menu.querySelector('#auto-hunt1');
+        const forge         = menu.querySelector('#auto-forge');
+        const mine          = menu.querySelector('#auto-mine');
+        const clanDungeon   = menu.querySelector('#auto-clandungeon');
+        const clangreet     = menu.querySelector('#auto-clangreet');
+        const clanrecruit   = menu.querySelector('#auto-clanrecruit');
+        const clanquest     = menu.querySelector('#auto-clanquest');
+        const undying       = menu.querySelector('#auto-undying');
+        const clanfight     = menu.querySelector('#auto-clanfight');
+        const king          = menu.querySelector('#auto-king');
+        const altars        = menu.querySelector('#auto-altars');
+        const clancoliseum  = menu.querySelector('#auto-clancoliseum');
+        const sequentialFarm= menu.querySelector('#auto-sequential-farm');
+        const silverEl      = menu.querySelector('#auto-silver');
+        const leagueEl      = menu.querySelector('#auto-league');
+        const coliseumEl    = menu.querySelector('#auto-coliseum');
+
+        // Устанавливаем начальные значения
+        if (campaign)       campaign.checked       = settings.autoCampaign       || false;
+        if (career)         career.checked         = settings.autoCareer         || false;
+        if (cave)           cave.checked           = settings.autoCave           || false;
+        if (hunt)           hunt.checked           = settings.autoHunt1          || false;
+        if (forge)          forge.checked          = settings.autoForge          || false;
+        if (mine)           mine.checked           = settings.autoMine           || false;
+        if (clanDungeon)    clanDungeon.checked    = settings.autoClanDungeon    || false;
+        if (clangreet)      clangreet.checked      = settings.autoClanGreet      || false;
+        if (clanrecruit)    clanrecruit.checked    = settings.autoClanRecruit    || false;
+        if (clanquest)      clanquest.checked      = settings.autoClanQuest      || false;
+        if (undying)        undying.checked        = settings.autoUndying        || false;
+        if (clanfight)      clanfight.checked      = settings.autoClanfight      || false;
+        if (king)           king.checked           = settings.autoKing           || false;
+        if (altars)         altars.checked         = settings.autoAltars         || false;
+        if (clancoliseum)   clancoliseum.checked   = settings.autoClancoliseum   || false;
+        if (sequentialFarm) sequentialFarm.checked = settings.autoSequentialFarm || false;
+        if (silverEl)       silverEl.checked       = settings.autoSilver         || false;
+        if (leagueEl)       leagueEl.checked       = settings.autoLeague         || false;
+        if (coliseumEl)     coliseumEl.checked     = settings.autoColiseum       || false;
+
+        // Сохраняем snapshot настроек для ОТМЕНИТЬ
+        let settingsSnapshot = JSON.parse(JSON.stringify(settings));
+
+        // Кнопки СОХРАНИТЬ / ОТМЕНИТЬ
+        menu.querySelectorAll('.fadd-btn-save').forEach(btn => {
             btn.addEventListener('click', () => {
-                showTab(btn.dataset.tab);
+                saveSettings();
+                settingsSnapshot = JSON.parse(JSON.stringify(settings));
+            });
+        });
+        menu.querySelectorAll('.fadd-btn-cancel').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Откатываем к snapshot
+                Object.assign(settings, settingsSnapshot);
+                // Обновляем тогглы
+                if (campaign)       campaign.checked       = settings.autoCampaign       || false;
+                if (career)         career.checked         = settings.autoCareer         || false;
+                if (cave)           cave.checked           = settings.autoCave           || false;
+                if (hunt)           hunt.checked           = settings.autoHunt1          || false;
+                if (forge)          forge.checked          = settings.autoForge          || false;
+                if (mine)           mine.checked           = settings.autoMine           || false;
+                if (clanDungeon)    clanDungeon.checked    = settings.autoClanDungeon    || false;
+                if (clangreet)      clangreet.checked      = settings.autoClanGreet      || false;
+                if (clanrecruit)    clanrecruit.checked    = settings.autoClanRecruit    || false;
+                if (clanquest)      clanquest.checked      = settings.autoClanQuest      || false;
+                if (undying)        undying.checked        = settings.autoUndying        || false;
+                if (clanfight)      clanfight.checked      = settings.autoClanfight      || false;
+                if (king)           king.checked           = settings.autoKing           || false;
+                if (altars)         altars.checked         = settings.autoAltars         || false;
+                if (clancoliseum)   clancoliseum.checked   = settings.autoClancoliseum   || false;
+                if (sequentialFarm) sequentialFarm.checked = settings.autoSequentialFarm || false;
+                if (silverEl)       silverEl.checked       = settings.autoSilver         || false;
+                if (leagueEl)       leagueEl.checked       = settings.autoLeague         || false;
+                if (coliseumEl)     coliseumEl.checked     = settings.autoColiseum       || false;
             });
         });
 
-        const drag = menu.querySelector('#fadd-drag');
-        const hunt = menu.querySelector('#auto-hunt1');
-        const forge = menu.querySelector('#auto-forge');
-        const mine = menu.querySelector('#auto-mine');
-        const cave = menu.querySelector('#auto-cave');
-        const clanDungeon = menu.querySelector('#auto-clandungeon');
-        const undying = menu.querySelector('#auto-undying');
-        const clanfight = menu.querySelector('#auto-clanfight');
-        const king = menu.querySelector('#auto-king');
-        const altars = menu.querySelector('#auto-altars');
-        const clancoliseum = menu.querySelector('#auto-clancoliseum');
-        const campaign = menu.querySelector('#auto-campaign');
-        const career = menu.querySelector('#auto-career');
-        const sequentialFarm = menu.querySelector('#auto-sequential-farm');
-
-        campaign.checked = settings.autoCampaign;
-        career.checked = settings.autoCareer;
-        hunt.checked = settings.autoHunt1;
-        forge.checked = settings.autoForge;
-        mine.checked = settings.autoMine;
-        cave.checked = settings.autoCave;
-        clanDungeon.checked = settings.autoClanDungeon;
-        if (undying) undying.checked = settings.autoUndying || false;
-        if (clanfight) clanfight.checked = settings.autoClanfight || false;
-        if (king) king.checked = settings.autoKing || false;
-        if (altars) altars.checked = settings.autoAltars || false;
-        if (clancoliseum) clancoliseum.checked = settings.autoClancoliseum || false;
-        sequentialFarm.checked = settings.autoSequentialFarm;
-
-        bindCheckbox(campaign, 'autoCampaign');
-        bindCheckbox(career, 'autoCareer');
-        bindCheckbox(hunt, 'autoHunt1');
-        bindCheckbox(forge, 'autoForge');
-        bindCheckbox(mine, 'autoMine');
-        bindCheckbox(cave, 'autoCave');
-        bindCheckbox(clanDungeon, 'autoClanDungeon');
-        bindCheckbox(undying, 'autoUndying');
-        bindCheckbox(clanfight, 'autoClanfight');
-        bindCheckbox(king, 'autoKing');
-        bindCheckbox(altars, 'autoAltars');
-        bindCheckbox(clancoliseum, 'autoClancoliseum');
+        bindCheckbox(campaign,       'autoCampaign');
+        bindCheckbox(career,         'autoCareer');
+        bindCheckbox(hunt,           'autoHunt1');
+        bindCheckbox(forge,          'autoForge');
+        bindCheckbox(mine,           'autoMine');
+        bindCheckbox(cave,           'autoCave');
+        bindCheckbox(clanDungeon,    'autoClanDungeon');
+        bindCheckbox(clangreet,      'autoClanGreet');
+        bindCheckbox(clanrecruit,    'autoClanRecruit');
+        bindCheckbox(clanquest,      'autoClanQuest');
+        bindCheckbox(undying,        'autoUndying');
+        bindCheckbox(clanfight,      'autoClanfight');
+        bindCheckbox(king,           'autoKing');
+        bindCheckbox(altars,         'autoAltars');
+        bindCheckbox(clancoliseum,   'autoClancoliseum');
+        bindCheckbox(silverEl,       'autoSilver');
+        bindCheckbox(leagueEl,       'autoLeague');
+        bindCheckbox(coliseumEl,     'autoColiseum');
         bindCheckbox(sequentialFarm, 'autoSequentialFarm', () => {
             localStorage.setItem(SEQUENTIAL_STEP_KEY, getSequentialOrder()[0] || 'mine');
             localStorage.setItem(SEQUENTIAL_LAST_KEY, '0');
         });
 
-        let isDragging = false;
-        let offsetX = 0;
-        let offsetY = 0;
-
-        if (drag) {
-            drag.addEventListener('mousedown', (e) => {
+        // ── Drag ─────────────────────────────────────────────────────────────
+        let isDragging = false, offsetX = 0, offsetY = 0;
+        const dragHandle = menu.querySelector('#fadd-header');
+        if (dragHandle) {
+            dragHandle.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.fadd-tab-btn') || e.target.closest('#fadd-close-btn')) return;
                 isDragging = true;
                 offsetX = e.clientX - menu.offsetLeft;
                 offsetY = e.clientY - menu.offsetTop;
             });
         }
 
-        // ── RESIZE ──────────────────────────────────────────────────────────
-        let isResizing = false;
-        let resizeStartX = 0, resizeStartY = 0;
-        let resizeStartW = 0, resizeStartH = 0;
-
+        // ── Resize ───────────────────────────────────────────────────────────
+        let isResizing = false, resizeStartX = 0, resizeStartY = 0, resizeStartW = 0, resizeStartH = 0;
         const resizeHandle = menu.querySelector('#fadd-resize');
         if (resizeHandle) {
             resizeHandle.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                e.preventDefault();
+                e.stopPropagation(); e.preventDefault();
                 isResizing = true;
-                resizeStartX = e.clientX;
-                resizeStartY = e.clientY;
-                resizeStartW = menu.offsetWidth;
-                resizeStartH = menu.offsetHeight;
+                resizeStartX = e.clientX; resizeStartY = e.clientY;
+                resizeStartW = menu.offsetWidth; resizeStartH = menu.offsetHeight;
             });
         }
 
         document.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 menu.style.left = (e.clientX - offsetX) + 'px';
-                menu.style.top = (e.clientY - offsetY) + 'px';
+                menu.style.top  = (e.clientY - offsetY) + 'px';
             }
             if (isResizing) {
-                const newW = Math.max(220, resizeStartW + (e.clientX - resizeStartX));
-                const newH = Math.max(100, resizeStartH + (e.clientY - resizeStartY));
+                const newW = Math.max(320, resizeStartW + (e.clientX - resizeStartX));
+                const newH = Math.max(200, resizeStartH + (e.clientY - resizeStartY));
                 menu.style.width  = newW + 'px';
                 menu.style.height = newH + 'px';
             }
         });
 
         document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                localStorage.setItem('fadd_menu_position', JSON.stringify({
-                    left: menu.style.left,
-                    top: menu.style.top
-                }));
-            }
-            if (isResizing) {
-                localStorage.setItem('fadd_menu_size', JSON.stringify({
-                    width:  menu.style.width,
-                    height: menu.style.height
-                }));
-            }
-            isDragging = false;
-            isResizing = false;
+            if (isDragging)   localStorage.setItem('fadd_menu_position', JSON.stringify({ left: menu.style.left, top: menu.style.top }));
+            if (isResizing)   localStorage.setItem('fadd_menu_size',     JSON.stringify({ width: menu.style.width, height: menu.style.height }));
+            isDragging = false; isResizing = false;
         });
 
-        const toggle = document.getElementById('mine-toggle');
-        const panel = document.getElementById('mine-panel');
-
-        if (toggle && panel) {
-            toggle.addEventListener('click', () => {
-                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        // ── Шахта ────────────────────────────────────────────────────────────
+        const mineToggle = menu.querySelector('#mine-toggle');
+        const minePanel  = menu.querySelector('#mine-panel');
+        if (mineToggle && minePanel) {
+            mineToggle.addEventListener('click', () => {
+                minePanel.style.display = minePanel.style.display === 'none' ? 'block' : 'none';
             });
         }
 
-        const sequentialOrderToggle = document.getElementById('sequential-order-toggle');
-        const sequentialOrderPanel = document.getElementById('sequential-order-panel');
-        if (sequentialOrderToggle && sequentialOrderPanel) {
-            sequentialOrderToggle.addEventListener('click', () => {
-                sequentialOrderPanel.style.display = sequentialOrderPanel.style.display === 'none' ? 'block' : 'none';
+        // ── Очередь автофарма ─────────────────────────────────────────────────
+        const seqToggle = menu.querySelector('#sequential-order-toggle');
+        const seqPanel  = menu.querySelector('#sequential-order-panel');
+        if (seqToggle && seqPanel) {
+            seqToggle.addEventListener('click', () => {
+                seqPanel.style.display = seqPanel.style.display === 'none' ? 'block' : 'none';
             });
         }
-
-        const battlesApplyToggle = document.getElementById('battles-apply-toggle');
-        const battlesApplyPanel = document.getElementById('battles-apply-panel');
-        if (battlesApplyToggle && battlesApplyPanel) {
-            battlesApplyToggle.addEventListener('click', () => {
-                battlesApplyPanel.style.display = battlesApplyPanel.style.display === 'none' ? 'block' : 'none';
-            });
-        }
-
-        const battlesApplyKing = menu.querySelector('#battles-apply-king');
-        const battlesApplyAltars = menu.querySelector('#battles-apply-altars');
-        const battlesApplyClanfight = menu.querySelector('#battles-apply-clanfight');
-        const battlesApplyClancoliseum = menu.querySelector('#battles-apply-clancoliseum');
-        const battlesApplyUndying = menu.querySelector('#battles-apply-undying');
-
-        if (battlesApplyKing) battlesApplyKing.checked = settings.battlesEnableKing !== false;
-        if (battlesApplyAltars) battlesApplyAltars.checked = settings.battlesEnableAltars !== false;
-        if (battlesApplyClanfight) battlesApplyClanfight.checked = settings.battlesEnableClanfight !== false;
-        if (battlesApplyClancoliseum) battlesApplyClancoliseum.checked = settings.battlesEnableClancoliseum !== false;
-        if (battlesApplyUndying) battlesApplyUndying.checked = settings.battlesEnableUndying !== false;
-
-        bindCheckbox(battlesApplyKing, 'battlesEnableKing');
-        bindCheckbox(battlesApplyAltars, 'battlesEnableAltars');
-        bindCheckbox(battlesApplyClanfight, 'battlesEnableClanfight');
-        bindCheckbox(battlesApplyClancoliseum, 'battlesEnableClancoliseum');
-        bindCheckbox(battlesApplyUndying, 'battlesEnableUndying');
 
         buildMinePanel();
-
-        // Если скан уже идёт — показать статус
         updateTimerScanStatusUI();
-
-        // Запускаем часы Киева в шапке
         startClock();
-        // Запускаем тикер расписания
         startScheduleTicker();
     }
 
@@ -4195,34 +4403,182 @@
         );
     }
 
+    const CLANCOLISEUM_FIGHT_START_KEY = 'fadd_clancoliseum_fight_start';
+    const CLANCOLISEUM_MAX_FIGHT_MS    = 5 * 60 * 1000; // 5 минут максимум
+
+    /**
+     * Читает HP игрока из первого div.rate на странице.
+     * style="width:77%" → 77
+     */
+    function getClancoliseumHP() {
+        const rates = document.querySelectorAll('div.rate');
+        if (!rates.length) return null;
+        // Первый div.rate — наш HP
+        const style = (rates[0].getAttribute('style') || '');
+        const m = style.match(/width\s*:\s*([\d.]+)%/);
+        return m ? parseFloat(m[1]) : null;
+    }
+
+    /**
+     * Возвращает true если кнопка зелёная (b_green), false если серая (b_grey / кд)
+     */
+    function isCCBtnReady(selector) {
+        const btn = document.querySelector(selector);
+        if (!btn) return false;
+        return btn.classList.contains('b_green');
+    }
+
     function runClancoliseum(force = false) {
         const url = window.location.href;
         const now = Date.now();
 
-        // ── Если мы на странице — сначала закрываем экран награды ────────────
-        if (url.includes('/clancoliseum/')) {
-            const closeReward = document.querySelector('a[href*="/clancoliseum/?close=reward"]');
-            if (closeReward) {
-                const last = parseInt(localStorage.getItem(CLANCOLISEUM_NAV_KEY) || '0', 10);
-                if (now - last >= 1500) {
-                    localStorage.setItem(CLANCOLISEUM_NAV_KEY, now.toString());
-                    console.log('[clancoliseum] закрываем экран награды');
-                    forceClick(closeReward);
-                }
-                return true;
-            }
+        // ── Не время — вне окна боя ───────────────────────────────────────────
+        const diffSec = secondsToNextFight([{ h: 10, m: 30 }, { h: 15, m: 0 }]);
+        const inWindow = diffSec <= 65 && diffSec >= -600;
+        const fightActive = !!localStorage.getItem(CLANCOLISEUM_FIGHT_START_KEY);
+
+        if (!inWindow && !fightActive) {
+            return false;
         }
 
-        // ── Основная логика через runBattleAuto (заявка + атака + уворот + настойка) ──
-        return runBattleAuto(
-            'clancoliseum',
-            '/clancoliseum/',
-            'https://tiwar.ru/clancoliseum/',
-            '/clancoliseum/enterFight/',
-            CLANCOLISEUM_NAV_KEY,
-            CLANCOLISEUM_REF_KEY,
-            [{ h: 10, m: 30 }, { h: 15, m: 0 }]
+        // ── Переходим на страницу если не там ────────────────────────────────
+        if (!url.includes('/clancoliseum/')) {
+            const last = parseInt(localStorage.getItem(CLANCOLISEUM_NAV_KEY) || '0', 10);
+            if (now - last < 3000) return true;
+            localStorage.setItem(CLANCOLISEUM_NAV_KEY, now.toString());
+            console.log('[clancoliseum] переходим на страницу');
+            window.location.href = 'https://tiwar.ru/clancoliseum/';
+            return true;
+        }
+
+        // ── Закрываем экран награды ───────────────────────────────────────────
+        const closeReward = document.querySelector('a[href*="/clancoliseum/?close=reward"]');
+        if (closeReward) {
+            const last = parseInt(localStorage.getItem(CLANCOLISEUM_NAV_KEY) || '0', 10);
+            if (now - last >= 1500) {
+                localStorage.setItem(CLANCOLISEUM_NAV_KEY, now.toString());
+                console.log('[clancoliseum] закрываем экран награды');
+                forceClick(closeReward);
+            }
+            return true;
+        }
+
+        // ── Подать заявку ─────────────────────────────────────────────────────
+        const applyBtn = Array.from(document.querySelectorAll('a.btn, a.nbtn')).find(a =>
+            (a.getAttribute('href') || '').includes('/clancoliseum/enterFight/')
         );
+        if (applyBtn) {
+            const last = parseInt(localStorage.getItem(CLANCOLISEUM_NAV_KEY) || '0', 10);
+            if (now - last >= 1500) {
+                localStorage.setItem(CLANCOLISEUM_NAV_KEY, now.toString());
+                console.log('[clancoliseum] подаём заявку');
+                forceClick(applyBtn);
+            }
+            return true;
+        }
+
+        // ── БОЙ: ищем кнопку атаки ───────────────────────────────────────────
+        const attackBtn = document.querySelector('a[href*="/clancoliseum/attack/"]');
+        if (attackBtn) {
+            // Запоминаем старт боя для таймера
+            if (!localStorage.getItem(CLANCOLISEUM_FIGHT_START_KEY)) {
+                localStorage.setItem(CLANCOLISEUM_FIGHT_START_KEY, now.toString());
+            }
+
+            // Проверяем 5-минутный таймер
+            const fightStart = parseInt(localStorage.getItem(CLANCOLISEUM_FIGHT_START_KEY), 10);
+            if (now - fightStart >= CLANCOLISEUM_MAX_FIGHT_MS) {
+                console.log('[clancoliseum] бой >5 мин — принудительно завершаем');
+                localStorage.removeItem(CLANCOLISEUM_FIGHT_START_KEY);
+                return false;
+            }
+
+            const hp = getClancoliseumHP();
+            console.log('[clancoliseum] HP:', hp);
+
+            // Настойка — если HP ≤ 20% и кнопка зелёная
+            if (hp !== null && hp <= 20) {
+                const healBtn = document.querySelector('a[href*="/clancoliseum/heal/"]');
+                if (healBtn && healBtn.classList.contains('b_green')) {
+                    const lastHeal = parseInt(localStorage.getItem('fadd_cc_heal_last') || '0', 10);
+                    if (now - lastHeal >= 1500) {
+                        localStorage.setItem('fadd_cc_heal_last', now.toString());
+                        console.log('[clancoliseum] настойка (HP', hp, '%)');
+                        forceClick(healBtn);
+                    }
+                }
+            }
+
+            // Трава — если кнопка зелёная (b_green)
+            const grassBtn = document.querySelector('a[href*="/clancoliseum/grass/"]');
+            if (grassBtn && grassBtn.classList.contains('b_green')) {
+                const lastGrass = parseInt(localStorage.getItem('fadd_cc_grass_last') || '0', 10);
+                if (now - lastGrass >= 1500) {
+                    localStorage.setItem('fadd_cc_grass_last', now.toString());
+                    console.log('[clancoliseum] трава');
+                    forceClick(grassBtn);
+                }
+            }
+
+            // Камень — если кнопка зелёная (b_green)
+            const stoneBtn = document.querySelector('a[href*="/clancoliseum/stone/"]');
+            if (stoneBtn && stoneBtn.classList.contains('b_green')) {
+                const lastStone = parseInt(localStorage.getItem('fadd_cc_stone_last') || '0', 10);
+                if (now - lastStone >= 1500) {
+                    localStorage.setItem('fadd_cc_stone_last', now.toString());
+                    console.log('[clancoliseum] камень');
+                    forceClick(stoneBtn);
+                }
+            }
+
+            // Уворот — если кнопка зелёная
+            const dodgeBtn = document.querySelector('a[href*="/clancoliseum/dodge/"]');
+            if (dodgeBtn && dodgeBtn.classList.contains('b_green')) {
+                const lastDodge = parseInt(localStorage.getItem('fadd_cc_dodge_last') || '0', 10);
+                if (now - lastDodge >= 1500) {
+                    localStorage.setItem('fadd_cc_dodge_last', now.toString());
+                    console.log('[clancoliseum] уворот');
+                    forceClick(dodgeBtn);
+                }
+            }
+
+            // Атака — каждые 5 сек
+            const lastAtk = parseInt(localStorage.getItem('fadd_cc_attack_last') || '0', 10);
+            if (now - lastAtk >= 5000) {
+                localStorage.setItem('fadd_cc_attack_last', now.toString());
+                console.log('[clancoliseum] атака');
+                forceClick(attackBtn);
+            }
+
+            return true;
+        }
+
+        // ── Кнопки атаки нет — если были в бою, значит бой завершён ─────────
+        if (fightActive) {
+            const fightStart = parseInt(localStorage.getItem(CLANCOLISEUM_FIGHT_START_KEY), 10);
+            const lastRef = parseInt(localStorage.getItem(CLANCOLISEUM_REF_KEY) || '0', 10);
+            if (now - lastRef < 5000) return true;
+            if (now - fightStart < 8000) {
+                // Бой только начался — возможно страница не успела загрузиться
+                localStorage.setItem(CLANCOLISEUM_REF_KEY, now.toString());
+                console.log('[clancoliseum] ждём начала боя, обновляем');
+                window.location.reload();
+                return true;
+            }
+            // Бой завершён
+            console.log('[clancoliseum] бой завершён');
+            localStorage.removeItem(CLANCOLISEUM_FIGHT_START_KEY);
+            return false;
+        }
+
+        // ── Ждём начала боя — обновляем каждые 5 сек ─────────────────────────
+        const lastRef = parseInt(localStorage.getItem(CLANCOLISEUM_REF_KEY) || '0', 10);
+        if (now - lastRef >= 5000) {
+            localStorage.setItem(CLANCOLISEUM_REF_KEY, now.toString());
+            console.log('[clancoliseum] ждём начала боя, обновляем');
+            window.location.reload();
+        }
+        return true;
     }
 
     /**
