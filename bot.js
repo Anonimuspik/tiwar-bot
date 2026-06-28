@@ -12,60 +12,53 @@ function loadCookies() {
     return JSON.parse(raw);
 }
 
-// ШАГ 1: выполняется ДО userscript — прописываем базовые настройки
+function loadSettings() {
+    const settingsPath = path.join(__dirname, 'settings.json');
+    try {
+        const raw = fs.readFileSync(settingsPath, 'utf8');
+        return JSON.parse(raw);
+    } catch (e) {
+        console.warn('[bot] settings.json не найден или повреждён, используем дефолт');
+        return {};
+    }
+}
+
+const gameSettings = loadSettings();
+console.log('[bot] Настройки загружены:', JSON.stringify(gameSettings, null, 2));
+
+// ШАГ 1: выполняется ДО userscript — прописываем настройки из settings.json
 const INIT_BEFORE = `
 (function() {
     const KEY = 'fadd_tiwar_settings';
-    let s = {};
-    try { s = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e) {}
+    const s = ${JSON.stringify(gameSettings)};
 
-    s.autoSequentialFarm        = true;
-    s.autoUndying               = true;
-    s.autoClanfight             = true;
-    s.autoKing                  = true;
-    s.autoAltars                = true;
-    s.autoClancoliseum          = false;
-    s.autoHunt1                 = false;
-    s.autoMine                  = false;
-    s.autoForge                 = false;
-    s.autoCave                  = false;
-    s.autoClanDungeon           = false;
-    s.autoCampaign              = false;
-    s.autoCareer                = false;
-    s.autoAdventure             = false;
-    s.battlesEnableUndying      = true;
-    s.battlesEnableClanfight    = true;
-    s.battlesEnableKing         = true;
-    s.battlesEnableAltars       = true;
-    s.battlesEnableClancoliseum = true;
+    // Записываем основные настройки
+    const existing = {};
+    try { Object.assign(existing, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch(e) {}
+    const merged = Object.assign(existing, s);
+    localStorage.setItem(KEY, JSON.stringify(merged));
 
-    localStorage.setItem(KEY, JSON.stringify(s));
+    // Порядок очереди
+    if (Array.isArray(s.sequentialOrder)) {
+        localStorage.setItem('fadd_custom_order', JSON.stringify(s.sequentialOrder));
+    }
 
-    // Порядок очереди — только нужные задачи
-    const CUSTOM_ORDER = [
-        'clanrecruit','clangreet','mine','forge','cave',
-        'clandungeon','campaign','career','sage',
-        'battles','arena','treasury','undying'
-    ];
-    localStorage.setItem('fadd_custom_order', JSON.stringify(CUSTOM_ORDER));
+    // Замороженные задачи
+    if (Array.isArray(s.frozenTasks)) {
+        localStorage.setItem('fadd_frozen_tasks', JSON.stringify(s.frozenTasks));
+    }
 
-    // Замороженные — пишем сейчас, но initFadd() может их сбросить
-    // Поэтому повторно зафиксируем ПОСЛЕ через патч ниже
-    localStorage.setItem('fadd_frozen_tasks', JSON.stringify(['hunt','league','coliseum','clanquest']));
-
-    console.log('[bot-init] pre-script настройки прописаны');
+    console.log('[bot-init] настройки из settings.json прописаны');
 })();
 `;
 
-// ШАГ 2: выполняется ПОСЛЕ userscript — патчит initFadd чтобы frozen не сбрасывались
+// ШАГ 2: выполняется ПОСЛЕ userscript — патчит frozen чтобы не сбрасывались
 const INIT_AFTER = `
 (function() {
-    // Патчим оригинальный initFadd: после его выполнения
-    // принудительно восстанавливаем замороженные задачи
-    // Используем MutationObserver на <body> — он сработает когда DOM готов
-    const FROZEN_ALWAYS = ['hunt', 'league', 'coliseum', 'clanquest'];
+    const FROZEN_ALWAYS = ${JSON.stringify(gameSettings.frozenTasks || [])};
 
     function enforceFrozen() {
+        if (!FROZEN_ALWAYS.length) return;
         try {
             const current = JSON.parse(localStorage.getItem('fadd_frozen_tasks') || '[]');
             const set = new Set(current);
@@ -80,12 +73,9 @@ const INIT_AFTER = `
         } catch(e) {}
     }
 
-    // Сразу после загрузки DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            // initFadd вызывается на DOMContentLoaded — ждём чуть позже
             setTimeout(enforceFrozen, 100);
-            // И ещё раз через секунду на случай задержки
             setTimeout(enforceFrozen, 1000);
         });
     } else {
@@ -93,11 +83,10 @@ const INIT_AFTER = `
         setTimeout(enforceFrozen, 1000);
     }
 
-    // Дополнительно — перехватываем localStorage.setItem
-    // чтобы frozen_tasks никогда не мог потерять нужные задачи
+    // Перехватываем localStorage.setItem чтобы frozen не терял нужные задачи
     const _origSet = localStorage.setItem.bind(localStorage);
     localStorage.setItem = function(key, value) {
-        if (key === 'fadd_frozen_tasks') {
+        if (key === 'fadd_frozen_tasks' && FROZEN_ALWAYS.length) {
             try {
                 const arr = JSON.parse(value || '[]');
                 const set = new Set(arr);
@@ -123,7 +112,6 @@ const INIT_AFTER = `
 
     await context.addCookies(loadCookies());
 
-    // Порядок addInitScript важен — выполняются по порядку регистрации
     await context.addInitScript({ content: INIT_BEFORE });
     await context.addInitScript({ content: fs.readFileSync(path.join(__dirname, 'userscript.js'), 'utf8') });
     await context.addInitScript({ content: INIT_AFTER });
