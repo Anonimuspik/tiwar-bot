@@ -13,15 +13,9 @@ body {
     min-height: 100vh;
     padding: 24px 16px;
 }
-h1 {
-    font-size: 20px;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 4px;
-}
+h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .subtitle { font-size: 12px; color: #5a5a7a; margin-bottom: 24px; }
 
-/* AUTH */
 #auth-screen {
     max-width: 360px;
     margin: 80px auto;
@@ -47,91 +41,26 @@ h1 {
 #auth-screen input:focus { border-color: #6c63ff; }
 #auth-error { color: #ff6666; font-size: 12px; margin-bottom: 10px; display: none; }
 
-/* MAIN */
 #main-screen { display: none; max-width: 720px; margin: 0 auto; }
-.header-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-    gap: 12px;
-}
+.header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
 .repo-info { font-size: 12px; color: #5a5a7a; }
 .repo-info span { color: #6c63ff; }
 
-/* CARD */
-.card {
-    background: #1e1e2e;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 16px;
-}
-.card-title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #8888bb;
-    margin-bottom: 14px;
-}
+.card { background: #1e1e2e; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.card-title { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #8888bb; margin-bottom: 14px; }
 
-/* TOGGLE ROW */
-.toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 9px 0;
-    border-bottom: 1px solid #2a2a3e;
-}
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #2a2a3e; }
 .toggle-row:last-of-type { border-bottom: none; }
 .toggle-label { font-size: 13px; color: #c8c8e8; }
-.toggle {
-    position: relative;
-    width: 40px;
-    height: 22px;
-    flex-shrink: 0;
-}
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
 .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
-.toggle-slider {
-    position: absolute;
-    inset: 0;
-    background: #3a3a5c;
-    border-radius: 11px;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-.toggle-slider::before {
-    content: '';
-    position: absolute;
-    width: 16px; height: 16px;
-    left: 3px; top: 3px;
-    background: #fff;
-    border-radius: 50%;
-    transition: transform 0.2s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-}
+.toggle-slider { position: absolute; inset: 0; background: #3a3a5c; border-radius: 11px; cursor: pointer; transition: background 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
 .toggle input:checked + .toggle-slider { background: #6c63ff; }
 .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
 
-/* QUEUE */
-#queue-list {
-    list-style: none;
-    margin-top: 8px;
-}
-#queue-list li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    margin-bottom: 4px;
-    background: #2a2a42;
-    cursor: grab;
-    user-select: none;
-    transition: background 0.15s, opacity 0.15s;
-    border: 1px solid transparent;
-}
+#queue-list { list-style: none; margin-top: 8px; }
+#queue-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; margin-bottom: 4px; background: #2a2a42; cursor: grab; user-select: none; transition: background 0.15s, opacity 0.15s; border: 1px solid transparent; }
 #queue-list li:active { cursor: grabbing; }
 #queue-list li.dragging { opacity: 0.4; }
 #queue-list li.drag-over { border-color: #6c63ff; background: #2e2e50; }
@@ -141,79 +70,25 @@ h1 {
 .freeze-cb { accent-color: #6c63ff; width: 14px; height: 14px; cursor: pointer; }
 #queue-list li.frozen .task-name { color: #5a5a7a; text-decoration: line-through; }
 
-/* BUTTONS */
-.btn {
-    background: #6c63ff;
-    border: none;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 10px 28px;
-    border-radius: 8px;
-    letter-spacing: 0.5px;
-    transition: background 0.15s;
-}
+.btn { background: #6c63ff; border: none; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; padding: 10px 28px; border-radius: 8px; letter-spacing: 0.5px; transition: background 0.15s; }
 .btn:hover { background: #7c74ff; }
 .btn:disabled { background: #3a3a5c; color: #6666aa; cursor: not-allowed; }
-.btn-secondary {
-    background: none;
-    border: 1px solid #3a3a5c;
-    color: #8888bb;
-    font-size: 12px;
-    cursor: pointer;
-    padding: 8px 16px;
-    border-radius: 8px;
-    transition: border-color 0.15s, color 0.15s;
-}
+.btn-secondary { background: none; border: 1px solid #3a3a5c; color: #8888bb; font-size: 12px; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: border-color 0.15s, color 0.15s; }
 .btn-secondary:hover { border-color: #6c63ff; color: #c8c8e8; }
 
-/* STATUS */
-#status-bar {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #2a2a42;
-    border: 1px solid #3a3a5c;
-    color: #c8c8e8;
-    font-size: 13px;
-    padding: 10px 24px;
-    border-radius: 999px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    display: none;
-    white-space: nowrap;
-    z-index: 999;
-}
+#status-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2a2a42; border: 1px solid #3a3a5c; color: #c8c8e8; font-size: 13px; padding: 10px 24px; border-radius: 999px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); display: none; white-space: nowrap; z-index: 999; }
 #status-bar.ok { border-color: #6c63ff; color: #a0a0ff; }
 #status-bar.err { border-color: #ff6666; color: #ff9999; }
 
-.footer-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    margin-top: 8px;
-    flex-wrap: wrap;
-}
+.footer-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
 
-/* LOGOUT */
-#logout-btn {
-    background: none;
-    border: none;
-    color: #5a5a7a;
-    font-size: 12px;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: color 0.15s;
-}
+#logout-btn { background: none; border: none; color: #5a5a7a; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; transition: color 0.15s; }
 #logout-btn:hover { color: #c8c8e8; }
 </style>
 </head>
 <body>
 
-<!-- ─── ЭКРАН ВХОДА ─────────────────────────────────────────── -->
-<div id="auth-screen" style="display:none">
+<div id="auth-screen">
     <h2>💀 RcCode Bot</h2>
     <p>Введите пароль для управления настройками</p>
     <input type="password" id="pw-input" placeholder="Пароль" autocomplete="current-password">
@@ -221,8 +96,7 @@ h1 {
     <button class="btn" style="width:100%" onclick="doLogin()">Войти</button>
 </div>
 
-<!-- ─── ГЛАВНЫЙ ЭКРАН ────────────────────────────────────────── -->
-<div id="main-screen" style="display:none">
+<div id="main-screen">
     <div class="header-row">
         <div>
             <h1>💀 RcCode Bot — Настройки</h1>
@@ -234,7 +108,6 @@ h1 {
         </div>
     </div>
 
-    <!-- Основные -->
     <div class="card">
         <div class="card-title">Основные</div>
         <div class="toggle-row"><span class="toggle-label">Авто-поход</span><label class="toggle"><input type="checkbox" data-key="autoCampaign"><span class="toggle-slider"></span></label></div>
@@ -245,7 +118,6 @@ h1 {
         <div class="toggle-row"><span class="toggle-label">Бои за золото (колизей)</span><label class="toggle"><input type="checkbox" data-key="autoColiseum"><span class="toggle-slider"></span></label></div>
     </div>
 
-    <!-- Далёкие берега -->
     <div class="card">
         <div class="card-title">Далёкие берега</div>
         <div class="toggle-row"><span class="toggle-label">Авто-охота</span><label class="toggle"><input type="checkbox" data-key="autoHunt1"><span class="toggle-slider"></span></label></div>
@@ -253,7 +125,6 @@ h1 {
         <div class="toggle-row"><span class="toggle-label">Авто-шахта</span><label class="toggle"><input type="checkbox" data-key="autoMine"><span class="toggle-slider"></span></label></div>
     </div>
 
-    <!-- Клан -->
     <div class="card">
         <div class="card-title">Клан</div>
         <div class="toggle-row"><span class="toggle-label">Авто-подземелье</span><label class="toggle"><input type="checkbox" data-key="autoClanDungeon"><span class="toggle-slider"></span></label></div>
@@ -262,7 +133,6 @@ h1 {
         <div class="toggle-row"><span class="toggle-label">Авто-задание клана</span><label class="toggle"><input type="checkbox" data-key="autoClanQuest"><span class="toggle-slider"></span></label></div>
     </div>
 
-    <!-- Сражения -->
     <div class="card">
         <div class="card-title">Сражения</div>
         <div class="toggle-row"><span class="toggle-label">Долина бессмертных</span><label class="toggle"><input type="checkbox" data-key="autoUndying"><span class="toggle-slider"></span></label></div>
@@ -272,7 +142,6 @@ h1 {
         <div class="toggle-row"><span class="toggle-label">Клановый колизей</span><label class="toggle"><input type="checkbox" data-key="autoClancoliseum"><span class="toggle-slider"></span></label></div>
     </div>
 
-    <!-- Автофарм -->
     <div class="card">
         <div class="card-title">Поочередный автофарм</div>
         <div class="toggle-row" style="margin-bottom:16px;">
@@ -285,7 +154,6 @@ h1 {
         <ul id="queue-list"></ul>
     </div>
 
-    <!-- Кнопки -->
     <div class="footer-actions">
         <button class="btn-secondary" onclick="loadFromRepo()">↺ Сбросить</button>
         <button class="btn" id="save-btn" onclick="saveToRepo()">Сохранить в репо</button>
@@ -295,66 +163,46 @@ h1 {
 <div id="status-bar"></div>
 
 <script>
-// ─── КОНСТАНТЫ ──────────────────────────────────────────────────────────────
-const PASS_KEY    = 'rcbot_auth';
-const REPO_KEY    = 'rcbot_repo';
-const TOKEN_KEY   = 'rcbot_token';
+const PASS_KEY  = 'rcbot_auth';
+const REPO_KEY  = 'rcbot_repo';
+const TOKEN_KEY = 'rcbot_token';
 
 const TASK_LABELS = {
-    arena:      'Авто-арена',
-    mine:       'Авто-шахта',
-    forge:      'Авто-кузница',
-    hunt:       'Авто-охота',
-    cave:       'Авто-пещера',
-    clandungeon:'Авто-подземелье',
-    campaign:   'Авто-поход',
-    career:     'Карьера',
-    sage:       'Хижина мудреца',
-    battles:    'Авто-заявки сражений',
-    league:     'Авто-лига (00:00)',
-    coliseum:   'Авто-колизей',
-    treasury:   'Авто-казна клана',
-    undying:    'Авто-долина бессмертных',
-    clanquest:  'Авто-клан задания',
-    clanrecruit:'Авто-набор в клан',
-    clangreet:  'Авто-привет'
+    arena:'Авто-арена', mine:'Авто-шахта', forge:'Авто-кузница',
+    hunt:'Авто-охота', cave:'Авто-пещера', clandungeon:'Авто-подземелье',
+    campaign:'Авто-поход', career:'Карьера', sage:'Хижина мудреца',
+    battles:'Авто-заявки сражений', league:'Авто-лига (00:00)',
+    coliseum:'Авто-колизей', treasury:'Авто-казна клана',
+    undying:'Авто-долина бессмертных', clanquest:'Авто-клан задания',
+    clanrecruit:'Авто-набор в клан', clangreet:'Авто-привет'
 };
+const DEFAULT_ORDER = ['arena','mine','forge','hunt','cave','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet'];
 
-const DEFAULT_ORDER = [
-    'arena','mine','forge','hunt','cave','clandungeon',
-    'campaign','career','sage','battles','league','coliseum',
-    'treasury','undying','clanquest','clanrecruit','clangreet'
-];
+let currentSettings = {}, repoFullName = '', ghToken = '';
 
-let currentSettings = {};
-let repoFullName = '';  // 'owner/repo'
-let ghToken = '';
+function show(id) { document.getElementById(id).style.display = 'block'; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
 
-// ─── AUTO LOGIN при загрузке ─────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+// При загрузке — проверяем есть ли сохранённые данные
+(function init() {
     const stored = localStorage.getItem(PASS_KEY);
     const repo   = localStorage.getItem(REPO_KEY);
     const tokenB = localStorage.getItem(TOKEN_KEY);
+    hide('auth-screen');
+    hide('main-screen');
     if (stored && repo && tokenB) {
-        // Уже входили — показываем сразу главный экран без пароля
         enterApp(repo, atob(tokenB));
-        return;
+    } else {
+        show('auth-screen');
     }
-    // Иначе показываем экран входа
-    document.getElementById('auth-screen').style.display = '';
-});
+})();
 
-// ─── AUTH ────────────────────────────────────────────────────────────────────
 function doLogin() {
     const pw = document.getElementById('pw-input').value.trim();
     if (!pw) return;
-
-    // Пароль хранится как хеш в localStorage
     const stored = localStorage.getItem(PASS_KEY);
-
     if (!stored) {
-        // Первый вход — сохраняем пароль + спрашиваем репо и токен
-        const repo  = prompt('Первый вход. Введите репозиторий (например: MyLogin/tiwar-bot)');
+        const repo  = prompt('Первый вход.\nВведите репозиторий (например: Anonimuspik/tiwar-bot)');
         const token = prompt('Введите Personal Access Token с правами repo');
         if (!repo || !token) return;
         localStorage.setItem(PASS_KEY,  btoa(pw));
@@ -367,64 +215,44 @@ function doLogin() {
             return;
         }
         document.getElementById('auth-error').style.display = 'none';
-        const repo  = localStorage.getItem(REPO_KEY)  || '';
-        const token = atob(localStorage.getItem(TOKEN_KEY) || '');
-        enterApp(repo, token);
+        enterApp(localStorage.getItem(REPO_KEY), atob(localStorage.getItem(TOKEN_KEY)));
     }
 }
 
-document.getElementById('pw-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') doLogin();
-});
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 function doLogout() {
-    document.getElementById('auth-screen').style.display = '';
-    document.getElementById('main-screen').style.display = 'none';
+    hide('main-screen');
+    show('auth-screen');
 }
 
 function enterApp(repo, token) {
     repoFullName = repo;
     ghToken = token;
-    document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('main-screen').style.display = '';
+    hide('auth-screen');
+    show('main-screen');
     document.getElementById('repo-display').textContent = repo;
     loadFromRepo();
 }
 
-// ─── GITHUB API ──────────────────────────────────────────────────────────────
 async function ghGet(path) {
-    const r = await fetch(`https://api.github.com/repos/${repoFullName}/contents/${path}`, {
-        headers: {
-            Authorization: `token ${ghToken}`,
-            Accept: 'application/vnd.github+json'
-        }
+    const r = await fetch('https://api.github.com/repos/' + repoFullName + '/contents/' + path, {
+        headers: { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github+json' }
     });
-    if (!r.ok) throw new Error(`GET ${path}: ${r.status} ${r.statusText}`);
+    if (!r.ok) throw new Error('GET ' + path + ': ' + r.status + ' ' + r.statusText);
     return r.json();
 }
 
 async function ghPut(path, content, sha, message) {
-    const r = await fetch(`https://api.github.com/repos/${repoFullName}/contents/${path}`, {
+    const r = await fetch('https://api.github.com/repos/' + repoFullName + '/contents/' + path, {
         method: 'PUT',
-        headers: {
-            Authorization: `token ${ghToken}`,
-            Accept: 'application/vnd.github+json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            message,
-            content: btoa(unescape(encodeURIComponent(content))),
-            sha
-        })
+        headers: { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, content: btoa(unescape(encodeURIComponent(content))), sha })
     });
-    if (!r.ok) {
-        const err = await r.json().catch(() => ({}));
-        throw new Error(err.message || `PUT ${path}: ${r.status}`);
-    }
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || 'PUT error ' + r.status); }
     return r.json();
 }
 
-// ─── LOAD ────────────────────────────────────────────────────────────────────
 async function loadFromRepo() {
     showStatus('⏳ Загружаю settings.json…', '');
     try {
@@ -435,140 +263,78 @@ async function loadFromRepo() {
         applyToUI(currentSettings);
         showStatus('✓ Настройки загружены', 'ok');
     } catch(e) {
-        showStatus('❌ Ошибка загрузки: ' + e.message, 'err');
+        showStatus('❌ Ошибка: ' + e.message, 'err');
     }
 }
 
-// ─── SAVE ────────────────────────────────────────────────────────────────────
 async function saveToRepo() {
     document.getElementById('save-btn').disabled = true;
     showStatus('⏳ Сохраняю…', '');
     try {
         const s = collectFromUI();
-        const sha = currentSettings._sha || undefined;
         const json = JSON.stringify(s, null, 2);
-        const result = await ghPut('settings.json', json, sha, 'bot: обновление настроек через GitHub Pages');
+        const result = await ghPut('settings.json', json, currentSettings._sha, 'bot: обновление настроек');
         currentSettings = { ...s, _sha: result.content.sha };
         showStatus('✓ Сохранено!', 'ok');
     } catch(e) {
-        showStatus('❌ Ошибка сохранения: ' + e.message, 'err');
+        showStatus('❌ Ошибка: ' + e.message, 'err');
     }
     document.getElementById('save-btn').disabled = false;
 }
 
-// ─── UI → DATA ───────────────────────────────────────────────────────────────
 function collectFromUI() {
     const s = {};
-
-    // Тогглы
-    document.querySelectorAll('[data-key]').forEach(el => {
-        s[el.dataset.key] = el.checked;
-    });
-
-    // Очередь и заморозка
-    const order = [];
-    const frozen = [];
+    document.querySelectorAll('[data-key]').forEach(el => { s[el.dataset.key] = el.checked; });
+    const order = [], frozen = [];
     document.querySelectorAll('#queue-list li').forEach(li => {
-        const task = li.dataset.task;
-        order.push(task);
-        if (li.querySelector('.freeze-cb').checked) frozen.push(task);
+        order.push(li.dataset.task);
+        if (li.querySelector('.freeze-cb').checked) frozen.push(li.dataset.task);
     });
     s.sequentialOrder = order;
     s.frozenTasks = frozen;
-
     return s;
 }
 
-// ─── DATA → UI ───────────────────────────────────────────────────────────────
 function applyToUI(s) {
-    // Тогглы
     document.querySelectorAll('[data-key]').forEach(el => {
-        const key = el.dataset.key;
-        if (key in s) el.checked = !!s[key];
+        if (el.dataset.key in s) el.checked = !!s[el.dataset.key];
     });
-
-    // Очередь
-    const order  = Array.isArray(s.sequentialOrder) ? s.sequentialOrder : DEFAULT_ORDER;
-    const frozen = Array.isArray(s.frozenTasks)     ? s.frozenTasks     : [];
-    renderQueue(order, frozen);
+    renderQueue(
+        Array.isArray(s.sequentialOrder) ? s.sequentialOrder : DEFAULT_ORDER,
+        Array.isArray(s.frozenTasks)     ? s.frozenTasks     : []
+    );
 }
 
-// ─── DRAG-AND-DROP ОЧЕРЕДЬ ───────────────────────────────────────────────────
 function renderQueue(order, frozenArr) {
     const list = document.getElementById('queue-list');
     list.innerHTML = '';
-
     const frozenSet = new Set(frozenArr);
-
-    // Задачи в сохранённом порядке + любые новые в конец
-    const fullOrder = [...order];
-    DEFAULT_ORDER.forEach(t => { if (!fullOrder.includes(t)) fullOrder.push(t); });
-
-    fullOrder.forEach(task => {
+    const full = [...order];
+    DEFAULT_ORDER.forEach(t => { if (!full.includes(t)) full.push(t); });
+    full.forEach(task => {
         const isFrozen = frozenSet.has(task);
         const li = document.createElement('li');
         li.dataset.task = task;
         if (isFrozen) li.classList.add('frozen');
         li.draggable = true;
-        li.innerHTML = `
-            <span class="drag-handle">⠿</span>
-            <span class="task-name">${TASK_LABELS[task] || task}</span>
-            <span class="freeze-label">Заморозить</span>
-            <input type="checkbox" class="freeze-cb" ${isFrozen ? 'checked' : ''}>
-        `;
-
-        // Заморозка
-        li.querySelector('.freeze-cb').addEventListener('change', e => {
-            li.classList.toggle('frozen', e.target.checked);
+        li.innerHTML = '<span class="drag-handle">⠿</span><span class="task-name">' + (TASK_LABELS[task] || task) + '</span><span class="freeze-label">Заморозить</span><input type="checkbox" class="freeze-cb"' + (isFrozen ? ' checked' : '') + '>';
+        li.querySelector('.freeze-cb').addEventListener('change', e => li.classList.toggle('frozen', e.target.checked));
+        li.addEventListener('dragstart', function(e) { dragSrc = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+        li.addEventListener('dragover',  function(e) { e.preventDefault(); this.classList.add('drag-over'); });
+        li.addEventListener('dragleave', function()  { this.classList.remove('drag-over'); });
+        li.addEventListener('drop',      function(e) {
+            e.preventDefault(); this.classList.remove('drag-over');
+            if (dragSrc === this) return;
+            const items = [...list.querySelectorAll('li')];
+            if (items.indexOf(dragSrc) < items.indexOf(this)) list.insertBefore(dragSrc, this.nextSibling);
+            else list.insertBefore(dragSrc, this);
         });
-
-        // Drag events
-        li.addEventListener('dragstart', onDragStart);
-        li.addEventListener('dragover',  onDragOver);
-        li.addEventListener('dragleave', onDragLeave);
-        li.addEventListener('drop',      onDrop);
-        li.addEventListener('dragend',   onDragEnd);
-
+        li.addEventListener('dragend',   function() { this.classList.remove('dragging'); document.querySelectorAll('#queue-list li').forEach(l => l.classList.remove('drag-over')); });
         list.appendChild(li);
     });
 }
-
 let dragSrc = null;
 
-function onDragStart(e) {
-    dragSrc = this;
-    this.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-}
-function onDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    this.classList.add('drag-over');
-}
-function onDragLeave() {
-    this.classList.remove('drag-over');
-}
-function onDrop(e) {
-    e.preventDefault();
-    this.classList.remove('drag-over');
-    if (dragSrc === this) return;
-    const list = document.getElementById('queue-list');
-    const items = [...list.querySelectorAll('li')];
-    const srcIdx  = items.indexOf(dragSrc);
-    const destIdx = items.indexOf(this);
-    if (srcIdx < destIdx) {
-        list.insertBefore(dragSrc, this.nextSibling);
-    } else {
-        list.insertBefore(dragSrc, this);
-    }
-}
-function onDragEnd() {
-    this.classList.remove('dragging');
-    document.querySelectorAll('#queue-list li').forEach(li => li.classList.remove('drag-over'));
-    dragSrc = null;
-}
-
-// ─── STATUS BAR ──────────────────────────────────────────────────────────────
 let statusTimer = null;
 function showStatus(msg, type) {
     const bar = document.getElementById('status-bar');
