@@ -4195,43 +4195,34 @@
         );
     }
 
-    const CLANCOLISEUM_APPLY_KEY = 'fadd_clancoliseum_apply_last';
-
     function runClancoliseum(force = false) {
         const url = window.location.href;
         const now = Date.now();
 
-        // Если мы на странице клан-колизея — сразу ищем кнопку «Подать заявку»
+        // ── Если мы на странице — сначала закрываем экран награды ────────────
         if (url.includes('/clancoliseum/')) {
-            const applyBtn = Array.from(document.querySelectorAll('a.btn')).find(a =>
-                (a.getAttribute('href') || '').includes('/clancoliseum/enterFight/')
-            );
-            if (applyBtn) {
-                const last = parseInt(localStorage.getItem(CLANCOLISEUM_APPLY_KEY) || '0', 10);
-                if (now - last >= 5000) {
-                    localStorage.setItem(CLANCOLISEUM_APPLY_KEY, now.toString());
-                    console.log('[clancoliseum] подаём заявку');
-                    forceClick(applyBtn);
+            const closeReward = document.querySelector('a[href*="/clancoliseum/?close=reward"]');
+            if (closeReward) {
+                const last = parseInt(localStorage.getItem(CLANCOLISEUM_NAV_KEY) || '0', 10);
+                if (now - last >= 1500) {
+                    localStorage.setItem(CLANCOLISEUM_NAV_KEY, now.toString());
+                    console.log('[clancoliseum] закрываем экран награды');
+                    forceClick(closeReward);
                 }
                 return true;
             }
         }
 
-        // Если заявку подали недавно — не переходим лишний раз
-        const lastApply = parseInt(localStorage.getItem(CLANCOLISEUM_APPLY_KEY) || '0', 10);
-        if (now - lastApply < 60000) return false;
-
-        // Переходим на страницу чтобы проверить наличие кнопки
-        if (!url.includes('/clancoliseum/')) {
-            const last = parseInt(localStorage.getItem(CLANCOLISEUM_NAV_KEY) || '0', 10);
-            if (now - last < 30000) return false; // не чаще раза в 30 сек
-            localStorage.setItem(CLANCOLISEUM_NAV_KEY, now.toString());
-            console.log('[clancoliseum] переходим проверить заявку');
-            window.location.href = 'https://tiwar.ru/clancoliseum/?from=fights';
-            return true;
-        }
-
-        return false;
+        // ── Основная логика через runBattleAuto (заявка + атака + уворот + настойка) ──
+        return runBattleAuto(
+            'clancoliseum',
+            '/clancoliseum/',
+            'https://tiwar.ru/clancoliseum/',
+            '/clancoliseum/enterFight/',
+            CLANCOLISEUM_NAV_KEY,
+            CLANCOLISEUM_REF_KEY,
+            [{ h: 10, m: 30 }, { h: 15, m: 0 }]
+        );
     }
 
     /**
