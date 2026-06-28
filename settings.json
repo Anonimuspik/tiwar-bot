@@ -19,10 +19,36 @@
   "autoClancoliseum": false,
   "autoSequentialFarm": false,
   "sequentialOrder": [
-    "arena", "mine", "forge", "hunt", "cave",
-    "clandungeon", "campaign", "career", "sage",
-    "battles", "league", "coliseum", "treasury",
-    "undying", "clanquest", "clanrecruit", "clangreet"
+    "arena",
+    "mine",
+    "forge",
+    "hunt",
+    "cave",
+    "clandungeon",
+    "campaign",
+    "career",
+    "sage",
+    "battles",
+    "league",
+    "coliseum",
+    "treasury",
+    "undying",
+    "clanquest",
+    "clanrecruit",
+    "clangreet"
   ],
-  "frozenTasks": ["hunt", "league", "coliseum", "clanquest"]
+  "frozenTasks": [
+    "mine",
+    "forge",
+    "hunt",
+    "campaign",
+    "career",
+    "sage",
+    "league",
+    "coliseum",
+    "undying",
+    "clanquest",
+    "clanrecruit",
+    "clangreet"
+  ]
 }
