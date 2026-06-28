@@ -213,7 +213,7 @@ h1 {
 <body>
 
 <!-- ─── ЭКРАН ВХОДА ─────────────────────────────────────────── -->
-<div id="auth-screen">
+<div id="auth-screen" style="display:none">
     <h2>💀 RcCode Bot</h2>
     <p>Введите пароль для управления настройками</p>
     <input type="password" id="pw-input" placeholder="Пароль" autocomplete="current-password">
@@ -222,7 +222,7 @@ h1 {
 </div>
 
 <!-- ─── ГЛАВНЫЙ ЭКРАН ────────────────────────────────────────── -->
-<div id="main-screen">
+<div id="main-screen" style="display:none">
     <div class="header-row">
         <div>
             <h1>💀 RcCode Bot — Настройки</h1>
@@ -329,6 +329,20 @@ const DEFAULT_ORDER = [
 let currentSettings = {};
 let repoFullName = '';  // 'owner/repo'
 let ghToken = '';
+
+// ─── AUTO LOGIN при загрузке ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+    const stored = localStorage.getItem(PASS_KEY);
+    const repo   = localStorage.getItem(REPO_KEY);
+    const tokenB = localStorage.getItem(TOKEN_KEY);
+    if (stored && repo && tokenB) {
+        // Уже входили — показываем сразу главный экран без пароля
+        enterApp(repo, atob(tokenB));
+        return;
+    }
+    // Иначе показываем экран входа
+    document.getElementById('auth-screen').style.display = '';
+});
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 function doLogin() {
