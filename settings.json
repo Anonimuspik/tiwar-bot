@@ -1,5 +1,5 @@
 {
-  "autoUndying": true,
+  "autoUndying": false,
   "autoClanfight": true,
   "autoKing": true,
   "autoAltars": true,
