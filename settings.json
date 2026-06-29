@@ -1,9 +1,9 @@
 {
-  "autoUndying": false,
-  "autoClanfight": false,
-  "autoKing": false,
-  "autoAltars": false,
-  "autoClancoliseum": false,
+  "autoUndying": true,
+  "autoClanfight": true,
+  "autoKing": true,
+  "autoAltars": true,
+  "autoClancoliseum": true,
   "autoSequentialFarm": true,
   "sequentialOrder": [
     "arena",
