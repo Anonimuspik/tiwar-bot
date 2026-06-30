@@ -25,6 +25,8 @@
     "clangreet"
   ],
   "frozenTasks": [
+    "mine",
+    "forge",
     "hunt",
     "league",
     "coliseum",
