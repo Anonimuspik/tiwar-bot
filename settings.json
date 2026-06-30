@@ -4,7 +4,7 @@
   "autoKing": true,
   "autoAltars": true,
   "autoClancoliseum": true,
-  "autoSequentialFarm": false,
+  "autoSequentialFarm": true,
   "sequentialOrder": [
     "arena",
     "mine",
@@ -25,20 +25,9 @@
     "clangreet"
   ],
   "frozenTasks": [
-    "arena",
-    "mine",
-    "forge",
     "hunt",
-    "cave",
-    "clandungeon",
-    "campaign",
-    "career",
-    "sage",
-    "battles",
     "league",
     "coliseum",
-    "treasury",
-    "undying",
     "clanquest",
     "clanrecruit",
     "clangreet"
