@@ -1,10 +1,10 @@
 {
-  "autoUndying": false,
+  "autoUndying": true,
   "autoClanfight": true,
   "autoKing": true,
   "autoAltars": true,
   "autoClancoliseum": true,
-  "autoSequentialFarm": true,
+  "autoSequentialFarm": false,
   "sequentialOrder": [
     "arena",
     "mine",
