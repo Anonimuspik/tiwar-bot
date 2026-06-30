@@ -25,12 +25,22 @@
     "clangreet"
   ],
   "frozenTasks": [
+    "arena",
+    "mine",
+    "forge",
     "hunt",
+    "cave",
+    "clandungeon",
+    "campaign",
+    "career",
     "sage",
+    "battles",
     "league",
     "coliseum",
+    "treasury",
     "undying",
     "clanquest",
+    "clanrecruit",
     "clangreet"
   ]
 }
