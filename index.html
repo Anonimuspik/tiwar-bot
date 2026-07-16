@@ -110,6 +110,8 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
             <button id="logout-btn" onclick="doLogout()">Выйти</button>
+            <button onclick="exportData()" style="background:#2a2a42;border:1px solid #3a3a5c;color:#8888bb;font-size:11px;cursor:pointer;padding:5px 10px;border-radius:6px;">💾 Экспорт</button>
+            <label style="background:#2a2a42;border:1px solid #3a3a5c;color:#8888bb;font-size:11px;cursor:pointer;padding:5px 10px;border-radius:6px;">📂 Импорт<input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)"></label>
         </div>
     </div>
 
@@ -456,6 +458,40 @@ function renderQueue(order, frozenArr) {
         list.appendChild(li);
     });
 }
+
+function exportData() {
+    const data = {
+        rcbot_auth: localStorage.getItem('rcbot_auth'),
+        rcbot_accounts: localStorage.getItem('rcbot_accounts'),
+        rcbot_active: localStorage.getItem('rcbot_active')
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'rcbot-backup.json';
+    a.click();
+    showStatus('✓ Данные экспортированы', 'ok');
+}
+
+function importData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.rcbot_auth) localStorage.setItem('rcbot_auth', data.rcbot_auth);
+            if (data.rcbot_accounts) localStorage.setItem('rcbot_accounts', data.rcbot_accounts);
+            if (data.rcbot_active) localStorage.setItem('rcbot_active', data.rcbot_active);
+            showStatus('✓ Данные восстановлены! Обновляю...', 'ok');
+            setTimeout(() => location.reload(), 1000);
+        } catch(e) {
+            showStatus('❌ Ошибка импорта', 'err');
+        }
+    };
+    reader.readAsText(file);
+}
+
 </script>
 </body>
 </html>
