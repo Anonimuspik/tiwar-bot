@@ -210,7 +210,7 @@ function showStatus(msg, type) {
     if (!raw) { show('auth-screen'); return; }
 
     try {
-        accounts = JSON.parse(atob(raw));
+        accounts = JSON.parse(decodeURIComponent(raw));
         activeIdx = parseInt(localStorage.getItem(ACTIVE_KEY) || '0', 10);
         if (activeIdx >= accounts.length) activeIdx = 0;
         enterApp();
@@ -229,7 +229,7 @@ function doLogin() {
         // Первый вход — сохраняем пароль и открываем модал добавления первого акка
         localStorage.setItem(PASS_KEY, btoa(pw));
         accounts = [];
-        localStorage.setItem(ACCOUNTS_KEY, btoa(JSON.stringify(accounts)));
+        localStorage.setItem(ACCOUNTS_KEY, encodeURIComponent(JSON.stringify(accounts)));
         enterApp();
         openModal();
     } else {
@@ -239,7 +239,7 @@ function doLogin() {
         }
         document.getElementById('auth-error').style.display = 'none';
         const raw = localStorage.getItem(ACCOUNTS_KEY);
-        accounts = raw ? JSON.parse(atob(raw)) : [];
+        accounts = raw ? JSON.parse(decodeURIComponent(raw)) : [];
         activeIdx = parseInt(localStorage.getItem(ACTIVE_KEY) || '0', 10);
         if (activeIdx >= accounts.length) activeIdx = 0;
         enterApp();
@@ -301,7 +301,7 @@ function switchAccount(idx) {
 function removeCurrentAccount() {
     if (!confirm('Удалить аккаунт "' + getActiveAccount().name + '"?')) return;
     accounts.splice(activeIdx, 1);
-    localStorage.setItem(ACCOUNTS_KEY, btoa(JSON.stringify(accounts)));
+    localStorage.setItem(ACCOUNTS_KEY, encodeURIComponent(JSON.stringify(accounts)));
     activeIdx = Math.max(0, activeIdx - 1);
     localStorage.setItem(ACTIVE_KEY, activeIdx.toString());
     if (accounts.length === 0) {
@@ -339,7 +339,7 @@ function addAccount() {
     }
 
     accounts.push({ name, repo, token });
-    localStorage.setItem(ACCOUNTS_KEY, btoa(JSON.stringify(accounts)));
+    localStorage.setItem(ACCOUNTS_KEY, encodeURIComponent(JSON.stringify(accounts)));
     activeIdx = accounts.length - 1;
     localStorage.setItem(ACTIVE_KEY, activeIdx.toString());
     closeModal();
