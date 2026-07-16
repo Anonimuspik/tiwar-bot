@@ -7,10 +7,6 @@
   "autoSequentialFarm": true,
   "sequentialOrder": [
     "arena",
-    "mine",
-    "forge",
-    "hunt",
-    "cave",
     "clandungeon",
     "campaign",
     "career",
@@ -22,12 +18,11 @@
     "undying",
     "clanquest",
     "clanrecruit",
-    "clangreet"
+    "clangreet",
+    "exchange",
+    "relic"
   ],
   "frozenTasks": [
-    "mine",
-    "forge",
-    "hunt",
     "league",
     "coliseum",
     "clanquest",
