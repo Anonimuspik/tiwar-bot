@@ -118,15 +118,14 @@ const REPO_KEY  = 'rcbot_repo';
 const TOKEN_KEY = 'rcbot_token';
 
 const TASK_LABELS = {
-    arena:'Авто-арена', mine:'Авто-шахта', forge:'Авто-кузница',
-    hunt:'Авто-охота', cave:'Авто-пещера', clandungeon:'Авто-подземелье',
+    arena:'Авто-арена', clandungeon:'Авто-подземелье',
     campaign:'Авто-поход', career:'Карьера', sage:'Хижина мудреца',
     battles:'Авто-заявки сражений', league:'Авто-лига (00:00)',
     coliseum:'Авто-колизей', treasury:'Авто-казна клана',
     undying:'Авто-долина бессмертных', clanquest:'Авто-клан задания',
     clanrecruit:'Авто-набор в клан', clangreet:'Авто-привет'
 };
-const DEFAULT_ORDER = ['arena','mine','forge','hunt','cave','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet'];
+const DEFAULT_ORDER = ['arena','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet','exchange','relic'];
 
 let currentSettings = {}, repoFullName = '', ghToken = '';
 let statusTimer = null, dragSrc = null;
