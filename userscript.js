@@ -19,7 +19,7 @@
     const TIMER_SCAN_ACTIVE_KEY = 'fadd_timer_scan_active';
     const TIMER_SCAN_INDEX_KEY = 'fadd_timer_scan_index';
     const SEQUENTIAL_COOLDOWN = 600;
-    const SEQUENTIAL_DEFAULT_ORDER = ['arena', 'mine', 'forge', 'hunt', 'cave', 'clandungeon', 'campaign', 'career', 'sage', 'battles', 'league', 'coliseum', 'treasury', 'undying', 'clanquest', 'clanrecruit', 'clangreet'];
+    const SEQUENTIAL_DEFAULT_ORDER = ['arena', 'mine', 'forge', 'hunt', 'cave', 'clandungeon', 'campaign', 'career', 'sage', 'battles', 'league', 'coliseum', 'treasury', 'undying', 'clanquest', 'clanrecruit', 'clangreet', 'exchange', 'relic'];
     const SEQUENTIAL_TASK_LABELS = {
         arena: 'Авто-арена',
         mine: 'Авто-шахта',
@@ -1730,7 +1730,7 @@
         for (let offset = 0; offset < order.length; offset++) {
             const task = order[(startIndex + offset) % order.length];
 
-            const noCooldownTasks = ['campaign', 'career', 'clandungeon', 'battles', 'league', 'coliseum', 'treasury', 'clanrecruit', 'clangreet'];
+            const noCooldownTasks = ['campaign', 'career', 'clandungeon', 'battles', 'league', 'coliseum', 'treasury', 'clanrecruit', 'clangreet', 'relic'];
             if (!noCooldownTasks.includes(task) && isTaskOnCooldown(task)) {
                 console.log('[sequential-farm] пропуск по таймеру:', SEQUENTIAL_TASK_LABELS[task]);
                 continue;
@@ -1767,6 +1767,8 @@
         if (task === 'clanquest') return runClanQuest(true);
         if (task === 'clanrecruit') return runClanRecruit(true);
         if (task === 'clangreet') return runClanGreet(true);
+        if (task === 'exchange') return runExchange(true);
+        if (task === 'relic') return runRelic(true);
         return false;
     }
 
@@ -4936,6 +4938,93 @@
         }
 
         treasuryReset();
+        return false;
+    }
+
+
+    // \u2500\u2500 \u041e\u0411\u041c\u0415\u041d\u041d\u0418\u041a \u0417\u041e\u041b\u041e\u0422\u0410 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    // \u0417\u0430\u0445\u043e\u0434\u0438\u0442 \u043d\u0430 /trade/exchange \u0440\u0430\u0437 \u0432 5 \u0447\u0430\u0441\u043e\u0432, \u0436\u043c\u0451\u0442 "\u041e\u0431\u043c\u0435\u043d\u044f\u0442\u044c" (silver\u2192gold), \u0437\u043e\u043b\u043e\u0442\u043e\u043d\u0430 \u0441\u0435\u0440\u0435\u0431\u0440\u043e \u0438\u0433\u043d\u043e\u0440\u0438\u0440\u0443\u0435\u0442
+    const EXCHANGE_LAST_KEY = 'fadd_exchange_last';
+    const EXCHANGE_COOLDOWN = 5 * 60 * 60 * 1000; // 5 \u0447\u0430\u0441\u043e\u0432
+
+    function runExchange(force = false) {
+        const url = window.location.href;
+        const now = Date.now();
+
+        if (!url.includes('/trade/exchange')) {
+            const last = parseInt(localStorage.getItem(EXCHANGE_LAST_KEY) || '0', 10);
+            if (!force && now - last < EXCHANGE_COOLDOWN) {
+                console.log('[exchange] \u043a\u0443\u043b\u0434\u0430\u0443\u043d, \u0438\u0434\u0451\u043c \u0434\u0430\u043b\u044c\u0448\u0435');
+                return false;
+            }
+            console.log('[exchange] \u043f\u0435\u0440\u0435\u0445\u043e\u0434\u0438\u043c \u043d\u0430 /trade/exchange');
+            window.location.href = 'https://tiwar.ru/trade/exchange';
+            return true;
+        }
+
+        // \u041c\u044b \u043d\u0430 \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0435 \u2014 \u0438\u0449\u0435\u043c \u0441\u0441\u044b\u043b\u043a\u0443 \u0441 /trade/exchange/silver/ (\u043e\u0431\u043c\u0435\u043d \u0441\u0435\u0440\u0435\u0431\u0440\u043e \u2192 \u0437\u043e\u043b\u043e\u0442\u043e)
+        const exchangeBtn = Array.from(document.querySelectorAll('.menuList a'))
+            .find(a => {
+                const href = a.getAttribute('href') || '';
+                const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
+                return href.includes('/trade/exchange/silver/') && text.includes('\u041e\u0431\u043c\u0435\u043d\u044f\u0442\u044c');
+            });
+
+        if (exchangeBtn) {
+            console.log('[exchange] \u0436\u043c\u0451\u043c \u041e\u0431\u043c\u0435\u043d\u044f\u0442\u044c:', (exchangeBtn.textContent || '').trim().substring(0, 60));
+            localStorage.setItem(EXCHANGE_LAST_KEY, now.toString());
+            window.location.href = exchangeBtn.getAttribute('href');
+            return true;
+        }
+
+        // \u0421\u0441\u044b\u043b\u043e\u043a \u0441 /exchange/silver/ \u043d\u0435\u0442 \u2014 \u0437\u043d\u0430\u0447\u0438\u0442 \u043e\u0431\u043c\u0435\u043d \u043d\u0435\u0432\u043e\u0437\u043c\u043e\u0436\u0435\u043d (\u043d\u0435\u0442 \u0441\u0435\u0440\u0435\u0431\u0440\u0430 \u0438\u043b\u0438 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u043e)
+        console.log('[exchange] \u043e\u0431\u043c\u0435\u043d \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u0435\u043d, \u0438\u0434\u0451\u043c \u0434\u0430\u043b\u044c\u0448\u0435');
+        localStorage.setItem(EXCHANGE_LAST_KEY, now.toString());
+        return false;
+    }
+
+    // \u2500\u2500 \u0414\u0420\u0415\u0412\u041d\u0418\u0415 \u0420\u0415\u041b\u0418\u041a\u0412\u0418\u0418 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    // \u0417\u0430\u0445\u043e\u0434\u0438\u0442 \u043d\u0430 /relic/ \u0442\u043e\u043b\u044c\u043a\u043e \u0435\u0441\u043b\u0438 \u0435\u0441\u0442\u044c \u0437\u043d\u0430\u043a (+) \u0432 \u043c\u0435\u043d\u044e, \u0436\u043c\u0451\u0442 "\u041f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u043d\u0430\u0433\u0440\u0430\u0434\u0443"
+
+    function runRelic(force = false) {
+        const url = window.location.href;
+        const now = Date.now();
+
+        if (!url.includes('/relic/')) {
+            // \u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u043d\u0430\u043b\u0438\u0447\u0438\u0435 (+) \u0432 \u0441\u0441\u044b\u043b\u043a\u0435 \u043d\u0430 /relic/ \u0432 \u043c\u0435\u043d\u044e
+            const hasPlus = Array.from(document.querySelectorAll('.menuList a, a'))
+                .some(a => {
+                    const href = a.getAttribute('href') || '';
+                    const text = (a.textContent || '');
+                    return href.includes('/relic/') && text.includes('(+)');
+                });
+
+            if (!hasPlus) {
+                console.log('[relic] \u043d\u0435\u0442 (+) \u0432 \u043c\u0435\u043d\u044e, \u043f\u0440\u043e\u043f\u0443\u0441\u043a\u0430\u0435\u043c');
+                return false;
+            }
+
+            console.log('[relic] \u0435\u0441\u0442\u044c (+), \u043f\u0435\u0440\u0435\u0445\u043e\u0434\u0438\u043c \u043d\u0430 /relic/');
+            window.location.href = 'https://tiwar.ru/relic/';
+            return true;
+        }
+
+        // \u041c\u044b \u043d\u0430 /relic/ \u2014 \u0438\u0449\u0435\u043c \u043a\u043d\u043e\u043f\u043a\u0443 "\u041f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u043d\u0430\u0433\u0440\u0430\u0434\u0443"
+        const rewardBtn = Array.from(document.querySelectorAll('a.btn, a'))
+            .find(a => {
+                const href = a.getAttribute('href') || '';
+                const text = (a.textContent || '').replace(/\s+/g, ' ').trim();
+                return href.includes('/relic/reward/') && text.includes('\u041f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u043d\u0430\u0433\u0440\u0430\u0434\u0443');
+            });
+
+        if (rewardBtn) {
+            console.log('[relic] \u0436\u043c\u0451\u043c \u041f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u043d\u0430\u0433\u0440\u0430\u0434\u0443');
+            window.location.href = rewardBtn.getAttribute('href');
+            return true;
+        }
+
+        // \u041d\u0430\u0433\u0440\u0430\u0434\u044b \u043d\u0435\u0442 \u2014 \u0438\u0434\u0451\u043c \u0434\u0430\u043b\u044c\u0448\u0435
+        console.log('[relic] \u043d\u0430\u0433\u0440\u0430\u0434 \u043d\u0435\u0442, \u0438\u0434\u0451\u043c \u0434\u0430\u043b\u044c\u0448\u0435');
         return false;
     }
 
