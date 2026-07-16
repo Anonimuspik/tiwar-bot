@@ -10,6 +10,7 @@ body { background: #13131f; color: #c8c8e8; font-family: -apple-system, BlinkMac
 h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .subtitle { font-size: 12px; color: #5a5a7a; margin-bottom: 24px; }
 
+/* AUTH */
 #auth-screen { max-width: 360px; margin: 80px auto; background: #1e1e2e; border-radius: 16px; padding: 32px; box-shadow: 0 8px 40px rgba(0,0,0,0.5); text-align: center; }
 #auth-screen h2 { font-size: 18px; color: #fff; margin-bottom: 8px; }
 #auth-screen p { font-size: 12px; color: #5a5a7a; margin-bottom: 20px; }
@@ -17,6 +18,29 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 #auth-screen input:focus { border-color: #6c63ff; }
 #auth-error { color: #ff6666; font-size: 12px; margin-bottom: 10px; display: none; }
 
+/* ACCOUNT SWITCHER */
+#acc-bar { max-width: 720px; margin: 0 auto 16px; display: none; }
+.acc-tabs { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.acc-tab { background: #1e1e2e; border: 1px solid #3a3a5c; color: #8888bb; font-size: 12px; font-weight: 600; cursor: pointer; padding: 7px 16px; border-radius: 8px; transition: all 0.15s; white-space: nowrap; }
+.acc-tab:hover { border-color: #6c63ff; color: #c8c8e8; }
+.acc-tab.active { background: #6c63ff; border-color: #6c63ff; color: #fff; }
+.acc-tab.add-acc { background: none; border-style: dashed; color: #5a5a7a; }
+.acc-tab.add-acc:hover { border-color: #6c63ff; color: #6c63ff; }
+
+/* ADD ACCOUNT MODAL */
+#add-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+#add-modal.open { display: flex; }
+.modal-box { background: #1e1e2e; border-radius: 16px; padding: 28px; width: 100%; max-width: 360px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
+.modal-box h3 { font-size: 16px; color: #fff; margin-bottom: 16px; }
+.modal-box input { width: 100%; background: #2a2a42; border: 1px solid #3a3a5c; color: #c8c8e8; border-radius: 8px; padding: 9px 13px; font-size: 13px; margin-bottom: 10px; outline: none; }
+.modal-box input:focus { border-color: #6c63ff; }
+.modal-box label { font-size: 11px; color: #5a5a7a; display: block; margin-bottom: 4px; margin-top: 2px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+.modal-actions .btn { flex: 1; padding: 9px; }
+.modal-actions .btn-secondary { flex: 1; padding: 9px; }
+#modal-error { color: #ff6666; font-size: 12px; margin-bottom: 8px; display: none; }
+
+/* MAIN */
 #main-screen { display: none; max-width: 720px; margin: 0 auto; }
 .header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
 .repo-info { font-size: 12px; color: #5a5a7a; }
@@ -49,18 +73,21 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
 .btn:disabled { background: #3a3a5c; color: #6666aa; cursor: not-allowed; }
 .btn-secondary { background: none; border: 1px solid #3a3a5c; color: #8888bb; font-size: 12px; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: border-color 0.15s, color 0.15s; }
 .btn-secondary:hover { border-color: #6c63ff; color: #c8c8e8; }
+.btn-danger { background: none; border: 1px solid #ff4444; color: #ff6666; font-size: 12px; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: all 0.15s; }
+.btn-danger:hover { background: #ff4444; color: #fff; }
 
 #status-bar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2a2a42; border: 1px solid #3a3a5c; color: #c8c8e8; font-size: 13px; padding: 10px 24px; border-radius: 999px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); display: none; white-space: nowrap; z-index: 999; }
 #status-bar.ok { border-color: #6c63ff; color: #a0a0ff; }
 #status-bar.err { border-color: #ff6666; color: #ff9999; }
 
-.footer-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
+.footer-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; align-items: center; }
 #logout-btn { background: none; border: none; color: #5a5a7a; font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
 #logout-btn:hover { color: #c8c8e8; }
 </style>
 </head>
 <body>
 
+<!-- AUTH -->
 <div id="auth-screen">
     <h2>💀 RcCode Bot</h2>
     <p>Введите пароль для управления настройками</p>
@@ -69,14 +96,19 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
     <button class="btn" style="width:100%" onclick="doLogin()">Войти</button>
 </div>
 
+<!-- ACCOUNT SWITCHER BAR -->
+<div id="acc-bar">
+    <div class="acc-tabs" id="acc-tabs"></div>
+</div>
+
+<!-- MAIN -->
 <div id="main-screen">
     <div class="header-row">
         <div>
             <h1>💀 RcCode Bot — Настройки</h1>
-            <div class="subtitle">Изменения сохраняются в <code>settings.json</code> в репозитории</div>
+            <div class="subtitle">Репо: <span id="repo-display">—</span> · Изменения сохраняются в <code>settings.json</code></div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
-            <div class="repo-info">Репо: <span id="repo-display">—</span></div>
             <button id="logout-btn" onclick="doLogout()">Выйти</button>
         </div>
     </div>
@@ -105,17 +137,36 @@ h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
     </div>
 
     <div class="footer-actions">
+        <button class="btn-danger" onclick="removeCurrentAccount()">Удалить акк</button>
         <button class="btn-secondary" onclick="loadFromRepo()">↺ Сбросить</button>
         <button class="btn" id="save-btn" onclick="saveToRepo()">Сохранить в репо</button>
+    </div>
+</div>
+
+<!-- ADD ACCOUNT MODAL -->
+<div id="add-modal">
+    <div class="modal-box">
+        <h3>➕ Добавить аккаунт</h3>
+        <label>Название (например: Black Fly)</label>
+        <input type="text" id="modal-name" placeholder="Kaneki">
+        <label>Репозиторий</label>
+        <input type="text" id="modal-repo" placeholder="Anonimuspik/tiwar-bot">
+        <label>Personal Access Token</label>
+        <input type="password" id="modal-token" placeholder="ghp_...">
+        <div id="modal-error"></div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+            <button class="btn" onclick="addAccount()">Добавить</button>
+        </div>
     </div>
 </div>
 
 <div id="status-bar"></div>
 
 <script>
-const PASS_KEY  = 'rcbot_auth';
-const REPO_KEY  = 'rcbot_repo';
-const TOKEN_KEY = 'rcbot_token';
+const PASS_KEY    = 'rcbot_auth';
+const ACCOUNTS_KEY = 'rcbot_accounts';   // [{name, repo, token}]
+const ACTIVE_KEY  = 'rcbot_active';      // index
 
 const TASK_LABELS = {
     arena:'Авто-арена', clandungeon:'Авто-подземелье',
@@ -123,12 +174,17 @@ const TASK_LABELS = {
     battles:'Авто-заявки сражений', league:'Авто-лига (00:00)',
     coliseum:'Авто-колизей', treasury:'Авто-казна клана',
     undying:'Авто-долина бессмертных', clanquest:'Авто-клан задания',
-    clanrecruit:'Авто-набор в клан', clangreet:'Авто-привет'
+    clanrecruit:'Авто-набор в клан', clangreet:'Авто-привет',
+    exchange:'Обменник золота', relic:'Древние реликвии'
 };
 const DEFAULT_ORDER = ['arena','clandungeon','campaign','career','sage','battles','league','coliseum','treasury','undying','clanquest','clanrecruit','clangreet','exchange','relic'];
 
-let currentSettings = {}, repoFullName = '', ghToken = '';
+let accounts = [];   // [{name, repo, token}]
+let activeIdx = 0;
+let currentSettings = {};
 let statusTimer = null, dragSrc = null;
+
+function getActiveAccount() { return accounts[activeIdx] || null; }
 
 function show(id) { document.getElementById(id).style.display = 'block'; }
 function hide(id) { document.getElementById(id).style.display = 'none'; }
@@ -142,68 +198,178 @@ function showStatus(msg, type) {
     statusTimer = setTimeout(() => { bar.style.display = 'none'; }, 3500);
 }
 
+// ── INIT ────────────────────────────────────────────────────────────────────
 (function init() {
-    hide('auth-screen');
-    hide('main-screen');
-    const stored = localStorage.getItem(PASS_KEY);
-    const repo   = localStorage.getItem(REPO_KEY);
-    const tokenB = localStorage.getItem(TOKEN_KEY);
-    if (stored && repo && tokenB) {
-        enterApp(repo, atob(tokenB));
-    } else {
+    hide('auth-screen'); hide('main-screen');
+    document.getElementById('acc-bar').style.display = 'none';
+
+    const pass = localStorage.getItem(PASS_KEY);
+    if (!pass) { show('auth-screen'); return; }
+
+    const raw = localStorage.getItem(ACCOUNTS_KEY);
+    if (!raw) { show('auth-screen'); return; }
+
+    try {
+        accounts = JSON.parse(atob(raw));
+        activeIdx = parseInt(localStorage.getItem(ACTIVE_KEY) || '0', 10);
+        if (activeIdx >= accounts.length) activeIdx = 0;
+        enterApp();
+    } catch(e) {
         show('auth-screen');
     }
 })();
 
+// ── AUTH ────────────────────────────────────────────────────────────────────
 function doLogin() {
     const pw = document.getElementById('pw-input').value.trim();
     if (!pw) return;
+
     const stored = localStorage.getItem(PASS_KEY);
     if (!stored) {
-        const repo  = prompt('Первый вход.\nВведите репозиторий (например: Anonimuspik/tiwar-bot)');
-        const token = prompt('Введите Personal Access Token с правами repo');
-        if (!repo || !token) return;
-        localStorage.setItem(PASS_KEY,  btoa(pw));
-        localStorage.setItem(REPO_KEY,  repo.trim());
-        localStorage.setItem(TOKEN_KEY, btoa(token.trim()));
-        enterApp(repo.trim(), token.trim());
+        // Первый вход — сохраняем пароль и открываем модал добавления первого акка
+        localStorage.setItem(PASS_KEY, btoa(pw));
+        accounts = [];
+        localStorage.setItem(ACCOUNTS_KEY, btoa(JSON.stringify(accounts)));
+        enterApp();
+        openModal();
     } else {
-        if (btoa(pw) !== stored) { document.getElementById('auth-error').style.display = 'block'; return; }
+        if (btoa(pw) !== stored) {
+            document.getElementById('auth-error').style.display = 'block';
+            return;
+        }
         document.getElementById('auth-error').style.display = 'none';
-        enterApp(localStorage.getItem(REPO_KEY), atob(localStorage.getItem(TOKEN_KEY)));
+        const raw = localStorage.getItem(ACCOUNTS_KEY);
+        accounts = raw ? JSON.parse(atob(raw)) : [];
+        activeIdx = parseInt(localStorage.getItem(ACTIVE_KEY) || '0', 10);
+        if (activeIdx >= accounts.length) activeIdx = 0;
+        enterApp();
     }
 }
 
 document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-function doLogout() { hide('main-screen'); show('auth-screen'); }
+function doLogout() {
+    hide('main-screen');
+    document.getElementById('acc-bar').style.display = 'none';
+    show('auth-screen');
+}
 
-function enterApp(repo, token) {
-    repoFullName = repo; ghToken = token;
-    hide('auth-screen'); show('main-screen');
-    document.getElementById('repo-display').textContent = repo;
+// ── ENTER APP ───────────────────────────────────────────────────────────────
+function enterApp() {
+    hide('auth-screen');
+    renderAccTabs();
+    document.getElementById('acc-bar').style.display = 'block';
+
+    if (accounts.length === 0) {
+        hide('main-screen');
+        return;
+    }
+    show('main-screen');
+    document.getElementById('repo-display').textContent = getActiveAccount().repo;
     loadFromRepo();
 }
 
+// ── ACCOUNT TABS ────────────────────────────────────────────────────────────
+function renderAccTabs() {
+    const container = document.getElementById('acc-tabs');
+    container.innerHTML = '';
+
+    accounts.forEach((acc, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'acc-tab' + (i === activeIdx ? ' active' : '');
+        btn.textContent = acc.name;
+        btn.onclick = () => switchAccount(i);
+        container.appendChild(btn);
+    });
+
+    // Кнопка добавить
+    const addBtn = document.createElement('button');
+    addBtn.className = 'acc-tab add-acc';
+    addBtn.textContent = '+ Добавить';
+    addBtn.onclick = openModal;
+    container.appendChild(addBtn);
+}
+
+function switchAccount(idx) {
+    activeIdx = idx;
+    localStorage.setItem(ACTIVE_KEY, idx.toString());
+    renderAccTabs();
+    document.getElementById('repo-display').textContent = getActiveAccount().repo;
+    show('main-screen');
+    loadFromRepo();
+}
+
+function removeCurrentAccount() {
+    if (!confirm('Удалить аккаунт "' + getActiveAccount().name + '"?')) return;
+    accounts.splice(activeIdx, 1);
+    localStorage.setItem(ACCOUNTS_KEY, btoa(JSON.stringify(accounts)));
+    activeIdx = Math.max(0, activeIdx - 1);
+    localStorage.setItem(ACTIVE_KEY, activeIdx.toString());
+    if (accounts.length === 0) {
+        hide('main-screen');
+        renderAccTabs();
+    } else {
+        switchAccount(activeIdx);
+    }
+}
+
+// ── ADD ACCOUNT MODAL ───────────────────────────────────────────────────────
+function openModal() {
+    document.getElementById('modal-name').value = '';
+    document.getElementById('modal-repo').value = '';
+    document.getElementById('modal-token').value = '';
+    document.getElementById('modal-error').style.display = 'none';
+    document.getElementById('add-modal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('add-modal').classList.remove('open');
+}
+
+function addAccount() {
+    const name  = document.getElementById('modal-name').value.trim();
+    const repo  = document.getElementById('modal-repo').value.trim();
+    const token = document.getElementById('modal-token').value.trim();
+    const err   = document.getElementById('modal-error');
+
+    if (!name || !repo || !token) {
+        err.textContent = 'Заполните все поля'; err.style.display = 'block'; return;
+    }
+    if (!repo.includes('/')) {
+        err.textContent = 'Репо в формате: Anonimuspik/tiwar-bot'; err.style.display = 'block'; return;
+    }
+
+    accounts.push({ name, repo, token });
+    localStorage.setItem(ACCOUNTS_KEY, btoa(JSON.stringify(accounts)));
+    activeIdx = accounts.length - 1;
+    localStorage.setItem(ACTIVE_KEY, activeIdx.toString());
+    closeModal();
+    enterApp();
+}
+
+// ── GITHUB API ──────────────────────────────────────────────────────────────
 async function ghGet(path) {
-    const r = await fetch('https://api.github.com/repos/' + repoFullName + '/contents/' + path, {
-        headers: { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github+json' }
+    const acc = getActiveAccount();
+    const r = await fetch('https://api.github.com/repos/' + acc.repo + '/contents/' + path, {
+        headers: { Authorization: 'token ' + acc.token, Accept: 'application/vnd.github+json' }
     });
     if (!r.ok) throw new Error('GET ' + r.status + ' ' + r.statusText);
     return r.json();
 }
 
 async function ghPut(path, content, sha, message) {
+    const acc = getActiveAccount();
     const body = { message, content: btoa(unescape(encodeURIComponent(content))) };
     if (sha) body.sha = sha;
-    const r = await fetch('https://api.github.com/repos/' + repoFullName + '/contents/' + path, {
+    const r = await fetch('https://api.github.com/repos/' + acc.repo + '/contents/' + path, {
         method: 'PUT',
-        headers: { Authorization: 'token ' + ghToken, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        headers: { Authorization: 'token ' + acc.token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || 'PUT error ' + r.status); }
     return r.json();
 }
 
+// ── LOAD / SAVE ─────────────────────────────────────────────────────────────
 async function loadFromRepo() {
     showStatus('⏳ Загружаю…', '');
     try {
@@ -228,6 +394,7 @@ async function saveToRepo() {
     document.getElementById('save-btn').disabled = false;
 }
 
+// ── UI ───────────────────────────────────────────────────────────────────────
 function collectFromUI() {
     const s = {};
     document.querySelectorAll('[data-key]').forEach(el => { s[el.dataset.key] = el.checked; });
