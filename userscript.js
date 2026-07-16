@@ -19,13 +19,9 @@
     const TIMER_SCAN_ACTIVE_KEY = 'fadd_timer_scan_active';
     const TIMER_SCAN_INDEX_KEY = 'fadd_timer_scan_index';
     const SEQUENTIAL_COOLDOWN = 600;
-    const SEQUENTIAL_DEFAULT_ORDER = ['arena', 'mine', 'forge', 'hunt', 'cave', 'clandungeon', 'campaign', 'career', 'sage', 'battles', 'league', 'coliseum', 'treasury', 'undying', 'clanquest', 'clanrecruit', 'clangreet', 'exchange', 'relic'];
+    const SEQUENTIAL_DEFAULT_ORDER = ['arena', 'cave', 'clandungeon', 'campaign', 'career', 'sage', 'battles', 'league', 'coliseum', 'treasury', 'undying', 'clanquest', 'clanrecruit', 'clangreet', 'exchange', 'relic'];
     const SEQUENTIAL_TASK_LABELS = {
-        arena: 'Авто-арена',
-        mine: 'Авто-шахта',
-        forge: 'Авто-кузница',
-        hunt: 'Авто-охота',
-        cave: 'Авто-пещера',
+        arena: 'Авто-арена',        cave: 'Авто-пещера',
         clandungeon: 'Авто-подземелье',
         campaign: 'Авто-поход',
         career: 'Карьера',
@@ -196,11 +192,7 @@
 
     let settings = {
         autoCampaign: false,
-        autoCareer: false,
-        autoHunt1: false,
-        autoForge: false,
-        autoMine: false,
-        autoCave: false,
+        autoCareer: false,        autoCave: false,
         autoClanDungeon: false,
         autoSequentialFarm: false,
         sequentialOrder: [...SEQUENTIAL_DEFAULT_ORDER],
@@ -259,19 +251,6 @@
         console.log(`[timer] ${task} готов через ${Math.round(ms / 1000)}с`);
     }
 
-    function getMineClicks() {
-        const header = document.querySelector('.ds-mine-header');
-        if (!header) return 0;
-
-        const box = header.querySelector('div[style*="border"]');
-        if (!box) return 0;
-
-        const text = (box.textContent || '').trim();
-        const match = text.match(/(\d+)\s*\/\s*(\d+)/);
-        if (!match) return 0;
-
-        return parseInt(match[1], 10);
-    }
 
     function createMenu() {
         if (document.getElementById('fadd-menu')) return;
@@ -528,9 +507,6 @@
 }
 .fadd-body-btn:hover { background: #34345a; }
 
-/* ── ШАХТА ── */
-#mine-panel { display: none; margin-top: 8px; }
-
 /* ── РАСПИСАНИЕ ── */
 .sched-item { color: #a0a0c8; font-size: 12px; margin: 3px 0; }
 
@@ -571,9 +547,7 @@
         </div>
     </div>
     <div id="fadd-tabs">
-        <button class="fadd-tab-btn" data-tab="main">Основные</button>
-        <button class="fadd-tab-btn" data-tab="distshores">Далёкие берега</button>
-        <button class="fadd-tab-btn" data-tab="clan">Клан</button>
+        <button class="fadd-tab-btn" data-tab="main">Основные</button>        <button class="fadd-tab-btn" data-tab="clan">Клан</button>
         <button class="fadd-tab-btn" data-tab="battles">Сражения</button>
         <button class="fadd-tab-btn" data-tab="other">Автофарм</button>
         <button class="fadd-tab-btn" data-tab="adventure">Приключение</button>
@@ -615,29 +589,6 @@
         <div class="fadd-actions">
             <button class="fadd-btn-cancel" data-panel="main">ОТМЕНИТЬ</button>
             <button class="fadd-btn-save" data-panel="main">СОХРАНИТЬ</button>
-        </div>
-    </div>
-
-    <!-- ── ДАЛЁКИЕ БЕРЕГА ── -->
-    <div class="fadd-panel" id="fadd-panel-distshores">
-        <div class="fadd-section-title">Далёкие берега</div>
-        <div class="fadd-row">
-            <span class="fadd-row-label">Авто-охота</span>
-            <label class="fadd-toggle"><input type="checkbox" id="auto-hunt1"><span class="fadd-toggle-slider"></span></label>
-        </div>
-        <div class="fadd-row">
-            <span class="fadd-row-label">Авто-кузница</span>
-            <label class="fadd-toggle"><input type="checkbox" id="auto-forge"><span class="fadd-toggle-slider"></span></label>
-        </div>
-        <div class="fadd-row">
-            <span class="fadd-row-label">Авто-шахта</span>
-            <label class="fadd-toggle"><input type="checkbox" id="auto-mine"><span class="fadd-toggle-slider"></span></label>
-        </div>
-        <button class="fadd-body-btn" id="mine-toggle">⚒ Приоритет шахты ▼</button>
-        <div id="mine-panel"></div>
-        <div class="fadd-actions">
-            <button class="fadd-btn-cancel" data-panel="distshores">ОТМЕНИТЬ</button>
-            <button class="fadd-btn-save" data-panel="distshores">СОХРАНИТЬ</button>
         </div>
     </div>
 
@@ -822,7 +773,7 @@
         }, 0);
 
         // ── Вкладки ───────────────────────────────────────────────────────────
-        const savedTab = localStorage.getItem('fadd_active_tab') || 'distshores';
+        const savedTab = localStorage.getItem('fadd_active_tab') || 'main';
 
         function showTab(tab) {
             localStorage.setItem('fadd_active_tab', tab);
@@ -850,9 +801,6 @@
         const campaign      = menu.querySelector('#auto-campaign');
         const career        = menu.querySelector('#auto-career');
         const cave          = menu.querySelector('#auto-cave');
-        const hunt          = menu.querySelector('#auto-hunt1');
-        const forge         = menu.querySelector('#auto-forge');
-        const mine          = menu.querySelector('#auto-mine');
         const clanDungeon   = menu.querySelector('#auto-clandungeon');
         const clangreet     = menu.querySelector('#auto-clangreet');
         const clanrecruit   = menu.querySelector('#auto-clanrecruit');
@@ -870,11 +818,7 @@
         // Устанавливаем начальные значения
         if (campaign)       campaign.checked       = settings.autoCampaign       || false;
         if (career)         career.checked         = settings.autoCareer         || false;
-        if (cave)           cave.checked           = settings.autoCave           || false;
-        if (hunt)           hunt.checked           = settings.autoHunt1          || false;
-        if (forge)          forge.checked          = settings.autoForge          || false;
-        if (mine)           mine.checked           = settings.autoMine           || false;
-        if (clanDungeon)    clanDungeon.checked    = settings.autoClanDungeon    || false;
+        if (cave)           cave.checked           = settings.autoCave           || false;        if (clanDungeon)    clanDungeon.checked    = settings.autoClanDungeon    || false;
         if (clangreet)      clangreet.checked      = settings.autoClanGreet      || false;
         if (clanrecruit)    clanrecruit.checked    = settings.autoClanRecruit    || false;
         if (clanquest)      clanquest.checked      = settings.autoClanQuest      || false;
@@ -905,11 +849,7 @@
                 // Обновляем тогглы
                 if (campaign)       campaign.checked       = settings.autoCampaign       || false;
                 if (career)         career.checked         = settings.autoCareer         || false;
-                if (cave)           cave.checked           = settings.autoCave           || false;
-                if (hunt)           hunt.checked           = settings.autoHunt1          || false;
-                if (forge)          forge.checked          = settings.autoForge          || false;
-                if (mine)           mine.checked           = settings.autoMine           || false;
-                if (clanDungeon)    clanDungeon.checked    = settings.autoClanDungeon    || false;
+                if (cave)           cave.checked           = settings.autoCave           || false;                if (clanDungeon)    clanDungeon.checked    = settings.autoClanDungeon    || false;
                 if (clangreet)      clangreet.checked      = settings.autoClanGreet      || false;
                 if (clanrecruit)    clanrecruit.checked    = settings.autoClanRecruit    || false;
                 if (clanquest)      clanquest.checked      = settings.autoClanQuest      || false;
@@ -926,11 +866,7 @@
         });
 
         bindCheckbox(campaign,       'autoCampaign');
-        bindCheckbox(career,         'autoCareer');
-        bindCheckbox(hunt,           'autoHunt1');
-        bindCheckbox(forge,          'autoForge');
-        bindCheckbox(mine,           'autoMine');
-        bindCheckbox(cave,           'autoCave');
+        bindCheckbox(career,         'autoCareer');        bindCheckbox(cave,           'autoCave');
         bindCheckbox(clanDungeon,    'autoClanDungeon');
         bindCheckbox(clangreet,      'autoClanGreet');
         bindCheckbox(clanrecruit,    'autoClanRecruit');
@@ -944,7 +880,7 @@
         bindCheckbox(leagueEl,       'autoLeague');
         bindCheckbox(coliseumEl,     'autoColiseum');
         bindCheckbox(sequentialFarm, 'autoSequentialFarm', () => {
-            localStorage.setItem(SEQUENTIAL_STEP_KEY, getSequentialOrder()[0] || 'mine');
+            localStorage.setItem(SEQUENTIAL_STEP_KEY, getSequentialOrder()[0] || );
             localStorage.setItem(SEQUENTIAL_LAST_KEY, '0');
         });
 
@@ -991,14 +927,6 @@
             isDragging = false; isResizing = false;
         });
 
-        // ── Шахта ────────────────────────────────────────────────────────────
-        const mineToggle = menu.querySelector('#mine-toggle');
-        const minePanel  = menu.querySelector('#mine-panel');
-        if (mineToggle && minePanel) {
-            mineToggle.addEventListener('click', () => {
-                minePanel.style.display = minePanel.style.display === 'none' ? 'block' : 'none';
-            });
-        }
 
         // ── Очередь автофарма ─────────────────────────────────────────────────
         const seqToggle = menu.querySelector('#sequential-order-toggle');
@@ -1009,7 +937,6 @@
             });
         }
 
-        buildMinePanel();
         updateTimerScanStatusUI();
         startClock();
         startScheduleTicker();
@@ -1049,138 +976,17 @@
     // type: tnt | drill | ticket | bore | ore | gold | empty
     // clicks: сколько кликов стоит ячейка (из break-параметра: 0→1, 1→2, 2→3)
 
-    const MINE_SLOTS_DEFAULT = [
-        { type: 'tnt',    clicks: 1, label: 'Динамит 1кл'  },
-        { type: 'tnt',    clicks: 2, label: 'Динамит 2кл'  },
-        { type: 'drill',  clicks: 1, label: 'Бур 1кл'       },
-        { type: 'drill',  clicks: 2, label: 'Бур 2кл'       },
-        { type: 'gold',   clicks: 1, label: 'Золото 1кл'    },
-        { type: 'gold',   clicks: 2, label: 'Золото 2кл'    },
-        { type: 'ticket', clicks: 1, label: 'Билет 1кл'     },
-        { type: 'ticket', clicks: 2, label: 'Билет 2кл'     },
-        { type: 'bore',   clicks: 1, label: '150 меди 1кл'  },
-        { type: 'ore',    clicks: 1, label: '50 меди 1кл'   },
-        { type: 'bore',   clicks: 2, label: '150 меди 2кл'  },
-        { type: 'ore',    clicks: 2, label: '50 меди 2кл'   },
-        { type: 'dirt',   clicks: 1, label: 'Земля 1кл'     },
-        { type: 'stone',  clicks: 2, label: 'Камень 2кл'    },
-    ];
-
-    function getMineSlots() {
-        try {
-            const saved = JSON.parse(localStorage.getItem('fadd_mine_slots') || 'null');
-            if (Array.isArray(saved) && saved.length === MINE_SLOTS_DEFAULT.length) {
-                return saved;
-            }
-        } catch (e) {}
-        return MINE_SLOTS_DEFAULT.map(s => ({ ...s }));
-    }
-
-    function saveMineSlots(slots) {
-        localStorage.setItem('fadd_mine_slots', JSON.stringify(slots));
-    }
-
-    function moveMineSlot(idx, dir) {
-        const slots = getMineSlots();
-        const swapIdx = idx + dir;
-        if (swapIdx < 0 || swapIdx >= slots.length) return;
-        [slots[idx], slots[swapIdx]] = [slots[swapIdx], slots[idx]];
-        saveMineSlots(slots);
-        buildMinePanel();
-    }
 
     // Определяет тип ячейки по src img
-    function getMineType(el) {
-        const img = el.querySelector('img');
-        const src = (img?.getAttribute('src') || img?.src || '').toLowerCase();
-        if (src.includes('tnt.png'))    return 'tnt';
-        if (src.includes('drill.png'))  return 'drill';
-        if (src.includes('ticket.png')) return 'ticket';
-        if (src.includes('bore.png'))   return 'bore';
-        if (src.includes('ore.png'))    return 'ore';
-        if (src.includes('gold.png'))   return 'gold';
-        if (!img || src === '') {
-            // Нет картинки — земля (1 клик) или камень (2 клика)
-            const clicks = getMineClicksFromHref(el);
-            return clicks >= 2 ? 'stone' : 'dirt';
-        }
-        return 'other';
-    }
+
 
     // Определяет кол-во кликов ячейки из break= параметра href
     // break = base64("X:Y"), Y=0→1клик, Y=1→2клика, Y=2→3клика
-    function getMineClicksFromHref(el) {
-        const href = el.getAttribute('href') || '';
-        const match = href.match(/[?&]break=([^&]+)/);
-        if (!match) return 1;
-        try {
-            const decoded = atob(match[1]);
-            const y = parseInt((decoded.split(':')[1] || '0'), 10);
-            return y + 1;
-        } catch (e) {
-            return 1;
-        }
-    }
+
 
     // Возвращает приоритет ячейки (меньший индекс = выше приоритет = копать первым)
-    function getMineTilePriority(el) {
-        const type = getMineType(el);
-        const clicks = getMineClicksFromHref(el);
-        const slots = getMineSlots();
-        // Точное совпадение тип+клики
-        let idx = slots.findIndex(s => s.type === type && s.clicks === clicks);
-        // Нет точного — берём по типу
-        if (idx === -1) idx = slots.findIndex(s => s.type === type);
-        return idx === -1 ? 9998 : idx;
-    }
 
-    function buildMinePanel() {
-        const panel = document.getElementById('mine-panel');
-        if (!panel) return;
 
-        panel.innerHTML = '';
-
-        const hint = document.createElement('div');
-        hint.style.cssText = 'color:#773333;font-size:10px;margin-bottom:6px;';
-        hint.textContent = '↑↓ — менять приоритет. Сверху = копать первым.';
-        panel.appendChild(hint);
-
-        const slots = getMineSlots();
-        const btnStyle = 'background:#1a0000;color:#cc3333;border:1px solid #5c0000;border-radius:3px;padding:0 3px;cursor:pointer;font-size:11px;line-height:16px;';
-
-        slots.forEach((slot, idx) => {
-            const row = document.createElement('div');
-            row.style.cssText = 'display:flex;align-items:center;gap:3px;margin:2px 0;padding:2px 3px;background:#222;border-radius:3px;';
-
-            const num = document.createElement('span');
-            num.textContent = (idx + 1) + '.';
-            num.style.cssText = 'color:#555;font-size:10px;min-width:16px;';
-
-            const upBtn = document.createElement('button');
-            upBtn.textContent = '↑';
-            upBtn.style.cssText = btnStyle;
-            upBtn.disabled = idx === 0;
-            upBtn.style.opacity = idx === 0 ? '0.3' : '1';
-            upBtn.addEventListener('click', () => moveMineSlot(idx, -1));
-
-            const downBtn = document.createElement('button');
-            downBtn.textContent = '↓';
-            downBtn.style.cssText = btnStyle;
-            downBtn.disabled = idx === slots.length - 1;
-            downBtn.style.opacity = idx === slots.length - 1 ? '0.3' : '1';
-            downBtn.addEventListener('click', () => moveMineSlot(idx, 1));
-
-            const name = document.createElement('span');
-            name.textContent = slot.label;
-            name.style.cssText = 'flex:1;color:#ff2222;font-size:11px;';
-
-            row.appendChild(num);
-            row.appendChild(upBtn);
-            row.appendChild(downBtn);
-            row.appendChild(name);
-            panel.appendChild(row);
-        });
-    }
 
     // ── Порядок задач (кастомный, хранится отдельно) ──────────────────────────
 
@@ -1401,43 +1207,6 @@
         return false;
     }
 
-    function runDistshores(now, url) {
-        if (!url.includes('distshores')) return;
-
-        // Если уже идёт бой с монстром (страница mfight, есть кнопка атаки/завершения боя
-        // или блок боя) — не трогаем меню "Охота", иначе скрипт выйдет из боя вместо атаки
-        const inMonsterFight =
-            url.includes('/mfight') ||
-            document.querySelector('.block_fight') ||
-            document.querySelector('.exp_bar') ||
-            findGameButton(['Атаковать монстра'], '/mfight/attack');
-        if (inMonsterFight) return;
-
-        const huntBtn = findGameButton(['Охота']);
-        if (huntBtn) {
-            const last = parseInt(localStorage.getItem('ds_hunt') || '0', 10);
-            if (now - last > 1000) {
-                localStorage.setItem('ds_hunt', now);
-                forceClick(huntBtn);
-                return;
-            }
-        }
-
-        const reconBtn = findGameButton(['Разведка за 1', 'Разведка']);
-        if (reconBtn) {
-            const last = parseInt(localStorage.getItem('ds_recon') || '0', 10);
-            if (now - last > 1000) {
-                localStorage.setItem('ds_recon', now);
-                forceClick(reconBtn);
-                return;
-            }
-        }
-
-        const exitBtn = findGameButton(['Закончить бой']);
-        if (exitBtn) {
-            forceClick(exitBtn);
-        }
-    }
 
     function getCampaignAttempts() {
         const text = (document.body?.textContent || '').replace(/\s+/g, ' ').trim();
@@ -1579,7 +1348,7 @@
             // Сканирование завершено
             localStorage.removeItem(TIMER_SCAN_ACTIVE_KEY);
             localStorage.removeItem(TIMER_SCAN_INDEX_KEY);
-            localStorage.setItem(SEQUENTIAL_STEP_KEY, getSequentialOrder()[0] || 'mine');
+            localStorage.setItem(SEQUENTIAL_STEP_KEY, getSequentialOrder()[0] || );
             localStorage.setItem(SEQUENTIAL_LAST_KEY, '0');
             updateTimerScanStatusUI();
             console.log('[timer-scan] проверка завершена');
@@ -1688,24 +1457,6 @@
         return false;
     }
 
-    function getForgeResource() {
-        const resourceNode = document.querySelector('div[style*="right: 0"]');
-        if (!resourceNode) return 0;
-
-        return parseInt(resourceNode.textContent.replace(/\D/g, ''), 10) || 0;
-    }
-
-    function getHuntTickets() {
-        const ticketBlock = Array.from(document.querySelectorAll('.block_zero, div'))
-            .find(el => (el.textContent || '').includes('Билет охоты'));
-
-        if (!ticketBlock) return null;
-
-        const text = (ticketBlock.textContent || '').replace(/\s+/g, ' ').trim();
-        const match = text.match(/Билет охоты:\s*(\d+)/i);
-
-        return match ? parseInt(match[1], 10) : null;
-    }
 
     function isAnyFightPage() {
         const url = window.location.href;
@@ -1751,9 +1502,6 @@
 
     function runSequentialTask(task) {
         if (task === 'arena') return runArena(true);
-        if (task === 'mine') return runSequentialMine();
-        if (task === 'forge') return runSequentialForge();
-        if (task === 'hunt') return runSequentialHunt();
         if (task === 'cave') return runSequentialCave();
         if (task === 'clandungeon') return runClanDungeon(true);
         if (task === 'campaign') return runCampaign(true);
@@ -2314,92 +2062,6 @@
         return true;
     }
 
-    function runSequentialMine() {
-        const url = window.location.href;
-
-        if (!url.includes('/distshores/mine')) {
-            goToMine();
-            return true;
-        }
-
-        const clicks = getMineClicks();
-        console.log('[sequential-farm] шахта, кликов:', clicks);
-
-        if (clicks <= 0) {
-            return false;
-        }
-
-        runMine(true);
-        return true;
-    }
-
-    function runSequentialForge() {
-        const url = window.location.href;
-
-        if (!url.includes('/distshores/forge')) {
-            window.location.href = 'https://tiwar.ru/distshores/forge';
-            return true;
-        }
-
-        const resource = getForgeResource();
-        console.log('[sequential-farm] кузница, ресурсов:', resource);
-
-        if (resource < 100) {
-            return false;
-        }
-
-        runForge(true);
-        return true;
-    }
-
-    function runSequentialHunt() {
-        const url = window.location.href;
-
-        if (isAnyFightPage()) {
-            localStorage.setItem('fadd_hunt_active', Date.now().toString());
-            runAutoHuntActions(true);
-            return true;
-        }
-
-        // Если недавно нажимали разведку/атаку — ждём пока бой не загрузится (10 сек)
-        const huntActive = parseInt(localStorage.getItem('fadd_hunt_active') || '0', 10);
-        if (Date.now() - huntActive < 3000) {
-            console.log('[sequential-farm] охота: ждём загрузки боя...');
-            return true;
-        }
-
-        if (!url.includes('/distshores/hunt')) {
-            const huntBtn = findGameButton(['Охота'], '/distshores/hunt');
-            if (huntBtn) {
-                forceClick(huntBtn);
-            } else {
-                window.location.href = 'https://tiwar.ru/distshores/hunt';
-            }
-            return true;
-        }
-
-        // Если есть кнопка боя/атаки — жмём, даже если билеты кончились
-        const attackBtnHunt = findGameButton(['Атаковать', 'Атаковать монстра', 'Начать новый бой', 'Напасть'], '/hunt/find/new');
-        const fightBtnHunt = findGameButton(['АТАКОВАТЬ'], '/attack/');
-        const exitBtnHunt = findGameButton(['Закончить бой', 'В город', 'Завершить', 'ЗАКОНЧИТЬ БОЙ']);
-        if (attackBtnHunt || fightBtnHunt || exitBtnHunt) {
-            localStorage.setItem('fadd_hunt_active', Date.now().toString());
-            runAutoHuntActions(true);
-            return true;
-        }
-
-        const tickets = getHuntTickets();
-        console.log('[sequential-farm] охота, билетов:', tickets);
-
-        if (tickets !== null && tickets <= 0) {
-            return false;
-        }
-
-        // Нажимаем разведку — запоминаем время чтобы ждать боя
-        localStorage.setItem('fadd_hunt_active', Date.now().toString());
-        runAutoHuntActions(true);
-        return true;
-    }
 
     function findQuestBlockByTitle(title) {
         return Array.from(document.querySelectorAll('.block_zero, .block_light'))
@@ -2752,32 +2414,13 @@
         if (settings.autoSequentialFarm) {
             runSequentialFarm();
             return;
-        }
-
-
-        if (settings.autoHunt1) {
-            runAutoHuntActions(false);
-        }
-
-        if (settings.autoCareer) {
+        }        if (settings.autoCareer) {
             runCareer();
         }
 
-        if (!document.body) return;
-
-        if (settings.autoForge) {
-            runForge();
-        }
-
-        if (settings.autoClanDungeon) {
+        if (!document.body) return;        if (settings.autoClanDungeon) {
             runClanDungeon();
-        }
-
-        if (settings.autoMine) {
-            runMineRoute();
-        }
-
-        if (settings.autoCave) {
+        }        if (settings.autoCave) {
             runCave();
         }
 
@@ -2806,18 +2449,10 @@
         const url = window.location.href;
         const now = Date.now();
 
-        if (!force && settings.autoHunt1) {
-            runDistshores(now, url);
-        }
 
         if (!document.body) return;
-
-        const huntExists = findGameButton(['Охота'], '/hunt');
-
         if (!force &&
-            !huntExists &&
             !window.location.href.includes('/fight') &&
-            !window.location.href.includes('/hunt') &&
             !document.querySelector('.block_fight')) {
             return;
         }
@@ -2872,12 +2507,9 @@
 
         if (isRunning) return;
 
-        const attackBtn = findGameButton(['Атаковать', 'Атаковать монстра', 'Начать новый бой', 'Напасть'], '/hunt/find/new');
+        const attackBtn = findGameButton(['Атаковать', 'Атаковать монстра', 'Начать новый бой', 'Напасть']);
         const fightBtn = findGameButton(['АТАКОВАТЬ'], '/attack/');
         const exitBtn = findGameButton(['Закончить бой', 'В город', 'Завершить', 'ЗАКОНЧИТЬ БОЙ']);
-        const reconBtn = findGameButton(['Разведка за 1', 'Разведка за'], '/hunt/');
-        const huntBtn = findGameButton(['Охота'], '/hunt');
-        const tickets = getHuntTickets();
 
         if (fightBtn) {
             const lastClick = parseInt(localStorage.getItem('fadd_last_fight_click') || '0', 10);
@@ -2921,111 +2553,8 @@
             return;
         }
 
-        if (huntBtn && !url.includes('/distshores/hunt')) {
-            isRunning = true;
-            lastActionTime = now;
-            forceClick(huntBtn);
-            setTimeout(() => { isRunning = false; }, 150);
-        }
     }
 
-    function runForge(force = false) {
-        const url = window.location.href;
-
-        if (!url.includes('/distshores/forge')) {
-            window.location.href = 'https://tiwar.ru/distshores/forge';
-            return;
-        }
-
-        const now = Date.now();
-        const last = parseInt(localStorage.getItem('fadd_forge_last') || '0', 10);
-
-        if (now - last < 400) {
-            return;
-        }
-
-        const resource = getForgeResource();
-
-        if (!resource || resource < 100) {
-            return;
-        }
-
-        const craftBtn = Array.from(document.querySelectorAll('a.btn')).find(el => {
-            const t = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
-            return t.includes('Выковать');
-        });
-
-        if (!craftBtn) return;
-
-        localStorage.setItem('fadd_forge_last', now.toString());
-        forceClick(craftBtn);
-    }
-
-    function goToMine() {
-        const mineBtn = findGameButton(['Шахта'], '/distshores/mine');
-        if (mineBtn) {
-            forceClick(mineBtn);
-        } else {
-            window.location.href = 'https://tiwar.ru/distshores/mine';
-        }
-    }
-
-    function runMineRoute(force = false) {
-        const url = window.location.href;
-        runMine(force);
-        if (!url.includes('/distshores/mine')) {
-            goToMine();
-        }
-    }
-
-    function runMine(force = false) {
-        if (!force && !settings.autoMine) return;
-        const url = window.location.href;
-        if (!url.includes('/distshores/mine')) return;
-
-        const budget = getMineClicks(); // сколько кликов осталось у персонажа
-        if (budget <= 0) return;
-
-        const now = Date.now();
-        const last = parseInt(localStorage.getItem('fadd_mine_last') || '0', 10);
-        if (now - last < 800) return;
-
-        const tiles = Array.from(document.querySelectorAll('a[href*="/distshores/mine/pick"]'));
-        if (!tiles.length) return;
-
-        // Убираем явно пустые (empty.png) и сортируем по приоритету
-        const ranked = tiles
-            .filter(t => !t.querySelector('img[src*="empty.png"]'))
-            .map(t => ({
-                el: t,
-                priority: getMineTilePriority(t),
-                cost: getMineClicksFromHref(t)
-            }))
-            .filter(t => t.priority < 9000)
-            .sort((a, b) => a.priority - b.priority);
-
-        if (!ranked.length) {
-            console.log('[mine] нет подходящих ячеек');
-            return;
-        }
-
-        localStorage.setItem('fadd_mine_last', now.toString());
-
-        // Кликаем по лучшим ячейкам, пока хватает бюджета
-        let remaining = budget;
-        let delay = 0;
-
-        for (const tile of ranked) {
-            if (remaining <= 0) break;
-            const times = Math.min(tile.cost, remaining);
-            for (let i = 0; i < times; i++) {
-                const el = tile.el;
-                setTimeout(() => forceClick(el), delay);
-                delay += 130;
-            }
-            remaining -= times;
-        }
-    }
 
     function runClanDungeon(force = false) {
         if (!force && !settings.autoClanDungeon) return false;
@@ -4286,7 +3815,7 @@
             return true;
         }
 
-        // ── Бой идёт — обрабатываем атаку/защиту (как в авто-охоте/колизее) ────
+        // ── Бой идёт — обрабатываем атаку/защиту (как в колизее) ────
         const attackBtn = document.querySelector(`a[href*="${path}attack/"]`);
         if (attackBtn) {
             const hp = getColiseumHP();
